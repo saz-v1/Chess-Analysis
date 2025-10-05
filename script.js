@@ -7,7 +7,6 @@ const pieceSymbols = {
         let chess = null;
         let moveHistory = [];
         let currentMoveIndex = -1;
-        let stockfish = null;
         let previousEval = null;
         let gameStates = [];
 
@@ -208,29 +207,28 @@ const pieceSymbols = {
             const fen = chess.fen();
             let bestMove = '';
             let evaluation = 0;
+            let gotResult = false;
             let analysisTimeout;
 
-            // Safety timeout - if no response in 3 seconds, show what we have
+            // Ultra-fast timeout - 1.5 seconds max
             analysisTimeout = setTimeout(() => {
-                if (!bestMove) {
-                    displayAnalysis(evaluation || 0, 'timeout');
+                if (!gotResult) {
+                    gotResult = true;
+                    stockfish.postMessage('stop');
+                    if (bestMove) {
+                        displayAnalysis(evaluation, bestMove);
+                    } else {
+                        displayAnalysis(0, 'timeout');
+                    }
                     btn.disabled = false;
                     btn.textContent = 'Analyze Position';
                 }
-            }, 3000);
+            }, 1500);
 
             const messageHandler = function(event) {
                 const line = event.data;
                 
-                if (line.includes('bestmove')) {
-                    clearTimeout(analysisTimeout);
-                    bestMove = line.split(' ')[1];
-                    displayAnalysis(evaluation, bestMove);
-                    btn.disabled = false;
-                    btn.textContent = 'Analyze Position';
-                    stockfish.removeEventListener('message', messageHandler);
-                }
-                
+                // Capture evaluation as soon as we get it
                 if (line.includes('score cp')) {
                     const match = line.match(/score cp (-?\d+)/);
                     if (match) {
@@ -242,18 +240,35 @@ const pieceSymbols = {
                         evaluation = match[1] > 0 ? 1000 : -1000;
                     }
                 }
+                
+                // Also capture best move from info lines
+                if (line.includes('pv ') && !bestMove) {
+                    const pvMatch = line.match(/pv (\w+)/);
+                    if (pvMatch) bestMove = pvMatch[1];
+                }
+                
+                if (line.includes('bestmove') && !gotResult) {
+                    gotResult = true;
+                    clearTimeout(analysisTimeout);
+                    const parts = line.split(' ');
+                    if (parts[1]) bestMove = parts[1];
+                    displayAnalysis(evaluation, bestMove);
+                    btn.disabled = false;
+                    btn.textContent = 'Analyze Position';
+                    stockfish.removeEventListener('message', messageHandler);
+                }
             };
 
             stockfish.addEventListener('message', messageHandler);
             stockfish.postMessage(`position fen ${fen}`);
-            stockfish.postMessage(`go movetime 500`); // Reduced to 500ms for faster response
+            stockfish.postMessage(`go depth 8`); // Lower depth for speed
         }
 
         function displayAnalysis(evaluation, bestMove) {
             const panel = document.getElementById('analysisPanel');
             
             if (bestMove === 'timeout') {
-                panel.innerHTML = '<h3>Move Analysis</h3><div class="analysis-result"><p style="color: #dc3545;">Analysis timed out. Stockfish may be loading slowly. Try again in a moment.</p></div>';
+                panel.innerHTML = '<h3>Move Analysis</h3><div class="analysis-result"><p style="color: #dc3545;">Analysis taking too long. Try refreshing the page if this persists.</p></div>';
                 return;
             }
 
@@ -308,7 +323,7 @@ const pieceSymbols = {
             }
             
             html += `<div class="best-move"><strong>Best continuation:</strong> ${bestMoveStr}</div>`;
-            html += `<p style="color: #666; margin-top: 10px; font-size: 12px;">Analysis depth: ~500ms</p>`;
+            html += `<p style="color: #666; margin-top: 10px; font-size: 12px;">Quick analysis (depth 8)</p>`;
             html += '</div>';
 
             panel.innerHTML = html;
