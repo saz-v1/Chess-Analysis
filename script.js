@@ -219,6 +219,7 @@ function renderBoard() {
     const boardElement = document.getElementById('chessboard');
     boardElement.innerHTML = '';
 
+    // Render squares and pieces
     for (let row = 0; row < 8; row++) {
         for (let col = 0; col < 8; col++) {
             const square = document.createElement('div');
@@ -232,7 +233,40 @@ function renderBoard() {
             boardElement.appendChild(square);
         }
     }
+
+    // Render labels
+    renderLabels();
 }
+
+function renderLabels() {
+    const letters = ['a','b','c','d','e','f','g','h'];
+    const numbers = [8,7,6,5,4,3,2,1];
+
+    // Letters under the board
+    const lettersRow = document.getElementById('lettersRow');
+    lettersRow.innerHTML = '';
+    letters.forEach(l => {
+        const span = document.createElement('span');
+        span.textContent = l;
+        span.style.flex = '1';
+        span.style.textAlign = 'center';
+        lettersRow.appendChild(span);
+    });
+
+    // Numbers on the left
+    const numbersCol = document.getElementById('numbersColumn');
+    numbersCol.innerHTML = '';
+    numbers.forEach(n => {
+        const div = document.createElement('div');
+        div.textContent = n;
+        div.style.flex = '1';
+        div.style.display = 'flex';
+        div.style.alignItems = 'center';
+        div.style.justifyContent = 'center';
+        numbersCol.appendChild(div);
+    });
+}
+
 
 function updateMoveInfo() {
     const info = document.getElementById('moveInfo');
