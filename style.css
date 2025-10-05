@@ -27,7 +27,7 @@ body {
 .header h1 {
     font-size: clamp(1.8rem, 5vw, 2.5rem);
     font-weight: 600;
-    color: #a8ff60;
+    color: #31b769; /* softer green accent */
     margin-bottom: 0.5rem;
 }
 
@@ -58,7 +58,7 @@ body {
 }
 
 .search-box input:focus {
-    border-color: #a8ff60;
+    border-color: #6FCF97;
     outline: none;
     background: #292929;
 }
@@ -67,8 +67,8 @@ body {
     flex: 0 0 auto;
     padding: 0.9rem 1.5rem;
     background: #1e1e1e;
-    border: 1.5px solid #a8ff60;
-    color: #a8ff60;
+    border: 1.5px solid #31b769;
+    color: #31b769;
     border-radius: 8px;
     font-size: 1rem;
     cursor: pointer;
@@ -76,7 +76,7 @@ body {
 }
 
 .search-box button:hover {
-    background: #a8ff60;
+    background: #31b769;
     color: #121212;
     transform: translateY(-2px);
 }
@@ -104,12 +104,12 @@ body {
 
 .game-card:hover {
     transform: translateY(-3px);
-    border-color: #a8ff60;
+    border-color: #31b769;
     box-shadow: 0 8px 20px rgba(0,0,0,0.6);
 }
 
 .game-card h3 {
-    color: #a8ff60;
+    color: #31b769;
     font-size: 1.1rem;
     margin-bottom: 0.5rem;
 }
@@ -134,7 +134,7 @@ body {
 .back-button {
     padding: 0.7rem 1.5rem;
     background: #2a2a2a;
-    color: #a8ff60;
+    color: #31b769;
     border: none;
     border-radius: 8px;
     cursor: pointer;
@@ -161,7 +161,7 @@ body {
 #chessboard {
     width: 100%;
     max-width: 500px;
-    aspect-ratio: 1 / 1; /* keeps board square */
+    aspect-ratio: 1 / 1;
     display: grid;
     grid-template-columns: repeat(8, 1fr);
     grid-template-rows: repeat(8, 1fr);
@@ -186,7 +186,7 @@ body {
 }
 
 .square.highlight {
-    background: #3a5f0b !important;
+    background: #52734D !important; /* softer green highlight */
 }
 
 .controls {
@@ -200,8 +200,8 @@ body {
     flex: 1 1 120px;
     padding: 0.7rem;
     background: #1e1e1e;
-    border: 1.5px solid #a8ff60;
-    color: #a8ff60;
+    border: 1.5px solid #31b769;
+    color: #31b769;
     border-radius: 6px;
     cursor: pointer;
     font-size: 0.9rem;
@@ -209,7 +209,7 @@ body {
 }
 
 .controls button:hover {
-    background: #a8ff60;
+    background: #31b769;
     color: #121212;
 }
 
@@ -232,7 +232,7 @@ body {
 }
 
 .analysis-panel h3 {
-    color: #a8ff60;
+    color: #31b769;
     margin-bottom: 1rem;
 }
 
@@ -241,7 +241,7 @@ body {
     padding: 1rem;
     border-radius: 8px;
     margin-bottom: 1rem;
-    border-left: 4px solid #a8ff60;
+    border-left: 4px solid #31b769;
 }
 
 .loading {
@@ -252,7 +252,7 @@ body {
 
 .spinner {
     border: 4px solid #2a2a2a;
-    border-top: 4px solid #a8ff60;
+    border-top: 4px solid #31b769;
     border-radius: 50%;
     width: 40px;
     height: 40px;
