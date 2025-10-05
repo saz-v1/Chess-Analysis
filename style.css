@@ -6,52 +6,54 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #121212; /* dark background */
-    color: #e0e0e0; /* light gray text */
+    background: #121212;
+    color: #e0e0e0;
     min-height: 100vh;
-    padding: 20px;
+    padding: 2rem;
 }
 
 .container {
     max-width: 1400px;
     margin: 0 auto;
+    width: 100%;
 }
 
 .header {
     text-align: center;
     color: #e0e0e0;
-    margin-bottom: 30px;
+    margin-bottom: 2rem;
 }
 
 .header h1 {
-    font-size: 2.5em;
+    font-size: clamp(1.8rem, 5vw, 2.5rem);
     font-weight: 600;
-    color: #a8ff60; /* subtle green accent */
-    margin-bottom: 10px;
+    color: #a8ff60;
+    margin-bottom: 0.5rem;
 }
 
 .search-section {
-    background: #1e1e1e; /* darker card */
-    padding: 30px;
+    background: #1e1e1e;
+    padding: 2rem;
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-    margin-bottom: 20px;
+    margin-bottom: 2rem;
 }
 
 .search-box {
     display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
 }
 
 .search-box input {
-    flex: 1;
-    padding: 14px;
+    flex: 1 1 200px;
+    padding: 0.9rem;
     border: 1.5px solid #2a2a2a;
     border-radius: 8px;
     background: #1e1e1e;
     color: #e0e0e0;
-    font-size: 16px;
+    font-size: 1rem;
     transition: border 0.2s, background 0.2s;
 }
 
@@ -62,12 +64,13 @@ body {
 }
 
 .search-box button {
-    padding: 14px 30px;
+    flex: 0 0 auto;
+    padding: 0.9rem 1.5rem;
     background: #1e1e1e;
     border: 1.5px solid #a8ff60;
     color: #a8ff60;
     border-radius: 8px;
-    font-size: 16px;
+    font-size: 1rem;
     cursor: pointer;
     transition: background 0.2s, color 0.2s, transform 0.2s;
 }
@@ -85,14 +88,14 @@ body {
 
 .games-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 15px;
-    margin-top: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-top: 1.5rem;
 }
 
 .game-card {
     background: #1e1e1e;
-    padding: 18px;
+    padding: 1rem;
     border-radius: 10px;
     cursor: pointer;
     transition: all 0.3s;
@@ -107,19 +110,19 @@ body {
 
 .game-card h3 {
     color: #a8ff60;
-    margin-bottom: 8px;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
 }
 
 .game-card p {
     color: #c0c0c0;
-    font-size: 14px;
-    margin: 5px 0;
+    font-size: 0.9rem;
 }
 
 .analyzer-section {
     display: none;
     background: #1e1e1e;
-    padding: 30px;
+    padding: 2rem;
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.5);
 }
@@ -129,13 +132,13 @@ body {
 }
 
 .back-button {
-    padding: 10px 20px;
+    padding: 0.7rem 1.5rem;
     background: #2a2a2a;
     color: #a8ff60;
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    margin-bottom: 20px;
+    margin-bottom: 1.5rem;
     transition: background 0.2s;
 }
 
@@ -145,8 +148,8 @@ body {
 
 .analyzer-grid {
     display: grid;
-    grid-template-columns: 1fr 400px;
-    gap: 20px;
+    grid-template-columns: 1fr minmax(280px, 400px);
+    gap: 1.5rem;
 }
 
 .board-container {
@@ -156,8 +159,9 @@ body {
 }
 
 #chessboard {
-    width: 500px;
-    height: 500px;
+    width: 100%;
+    max-width: 500px;
+    aspect-ratio: 1 / 1; /* keeps board square */
     display: grid;
     grid-template-columns: repeat(8, 1fr);
     grid-template-rows: repeat(8, 1fr);
@@ -169,7 +173,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 40px;
+    font-size: clamp(20px, 4vw, 40px);
     cursor: pointer;
 }
 
@@ -182,23 +186,25 @@ body {
 }
 
 .square.highlight {
-    background: #3a5f0b !important; /* subtle green highlight */
+    background: #3a5f0b !important;
 }
 
 .controls {
-    margin-top: 20px;
+    margin-top: 1rem;
     display: flex;
-    gap: 10px;
+    flex-wrap: wrap;
+    gap: 0.7rem;
 }
 
 .controls button {
-    padding: 10px 20px;
+    flex: 1 1 120px;
+    padding: 0.7rem;
     background: #1e1e1e;
     border: 1.5px solid #a8ff60;
     color: #a8ff60;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 0.9rem;
     transition: background 0.2s, color 0.2s;
 }
 
@@ -213,89 +219,34 @@ body {
 }
 
 .move-info {
-    font-size: 18px;
-    margin: 15px 0;
-    color: #e0e0e0;
+    font-size: clamp(1rem, 2.5vw, 1.2rem);
+    margin: 1rem 0;
 }
 
 .analysis-panel {
     background: #1a1a1a;
-    padding: 20px;
+    padding: 1.5rem;
     border-radius: 10px;
-    max-height: 600px;
+    max-height: 60vh;
     overflow-y: auto;
 }
 
 .analysis-panel h3 {
     color: #a8ff60;
-    margin-bottom: 15px;
+    margin-bottom: 1rem;
 }
 
 .analysis-result {
     background: #1e1e1e;
-    padding: 15px;
+    padding: 1rem;
     border-radius: 8px;
-    margin-bottom: 15px;
+    margin-bottom: 1rem;
     border-left: 4px solid #a8ff60;
-}
-
-.evaluation {
-    font-size: 20px;
-    font-weight: bold;
-    margin-bottom: 10px;
-}
-
-.evaluation.positive {
-    color: #28a745;
-}
-
-.evaluation.negative {
-    color: #dc3545;
-}
-
-.best-move {
-    background: #121a12;
-    padding: 10px;
-    border-radius: 6px;
-    margin: 10px 0;
-}
-
-.move-quality {
-    display: inline-block;
-    padding: 5px 10px;
-    border-radius: 6px;
-    font-weight: bold;
-    margin: 5px 0;
-}
-
-.move-quality.excellent {
-    background: #1b3a1b;
-    color: #28a745;
-}
-
-.move-quality.good {
-    background: #143a3a;
-    color: #00d1b2;
-}
-
-.move-quality.inaccuracy {
-    background: #3a3a12;
-    color: #f1c40f;
-}
-
-.move-quality.mistake {
-    background: #3a1212;
-    color: #e74c3c;
-}
-
-.move-quality.blunder {
-    background: #8b1c1c;
-    color: #fff;
 }
 
 .loading {
     text-align: center;
-    padding: 20px;
+    padding: 1rem;
     color: #aaa;
 }
 
@@ -306,7 +257,7 @@ body {
     width: 40px;
     height: 40px;
     animation: spin 1s linear infinite;
-    margin: 20px auto;
+    margin: 1rem auto;
 }
 
 @keyframes spin {
@@ -314,20 +265,20 @@ body {
     100% { transform: rotate(360deg); }
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 900px) {
     .analyzer-grid {
         grid-template-columns: 1fr;
+    }
+    .controls {
+        justify-content: center;
     }
 }
 
 @media (max-width: 600px) {
-    #chessboard {
-        width: 90vw;
-        height: 90vw;
-        max-width: 400px;
-        max-height: 400px;
+    body {
+        padding: 1rem;
     }
-    .square {
-        font-size: 30px;
+    #chessboard {
+        max-width: 90vw;
     }
 }
