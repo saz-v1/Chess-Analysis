@@ -1,364 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chess.com Game Analyzer</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .header {
-            text-align: center;
-            color: white;
-            margin-bottom: 30px;
-        }
-
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
-
-        .search-section {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            margin-bottom: 20px;
-        }
-
-        .search-box {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .search-box input {
-            flex: 1;
-            padding: 15px;
-            border: 2px solid #667eea;
-            border-radius: 8px;
-            font-size: 16px;
-        }
-
-        .search-box button {
-            padding: 15px 30px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-
-        .search-box button:hover {
-            transform: translateY(-2px);
-        }
-
-        .search-box button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        .games-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        .game-card {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s;
-            border: 2px solid transparent;
-        }
-
-        .game-card:hover {
-            transform: translateY(-3px);
-            border-color: #667eea;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-
-        .game-card h3 {
-            color: #333;
-            margin-bottom: 10px;
-        }
-
-        .game-card p {
-            color: #666;
-            font-size: 14px;
-            margin: 5px 0;
-        }
-
-        .analyzer-section {
-            display: none;
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-
-        .analyzer-section.active {
-            display: block;
-        }
-
-        .back-button {
-            padding: 10px 20px;
-            background: #6c757d;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            margin-bottom: 20px;
-        }
-
-        .analyzer-grid {
-            display: grid;
-            grid-template-columns: 1fr 400px;
-            gap: 20px;
-        }
-
-        .board-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        #chessboard {
-            width: 500px;
-            height: 500px;
-            display: grid;
-            grid-template-columns: repeat(8, 1fr);
-            grid-template-rows: repeat(8, 1fr);
-            border: 3px solid #333;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-        }
-
-        .square {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 40px;
-            cursor: pointer;
-        }
-
-        .square.light {
-            background: #f0d9b5;
-        }
-
-        .square.dark {
-            background: #b58863;
-        }
-
-        .square.highlight {
-            background: #baca44 !important;
-        }
-
-        .controls {
-            margin-top: 20px;
-            display: flex;
-            gap: 10px;
-        }
-
-        .controls button {
-            padding: 10px 20px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        .controls button:hover {
-            background: #5568d3;
-        }
-
-        .controls button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .move-info {
-            font-size: 18px;
-            margin: 15px 0;
-            color: #333;
-        }
-
-        .analysis-panel {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 10px;
-            max-height: 600px;
-            overflow-y: auto;
-        }
-
-        .analysis-panel h3 {
-            color: #333;
-            margin-bottom: 15px;
-        }
-
-        .analysis-result {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            border-left: 4px solid #667eea;
-        }
-
-        .evaluation {
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-
-        .evaluation.positive {
-            color: #28a745;
-        }
-
-        .evaluation.negative {
-            color: #dc3545;
-        }
-
-        .best-move {
-            background: #e7f3ff;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
-        }
-
-        .move-quality {
-            display: inline-block;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-weight: bold;
-            margin: 5px 0;
-        }
-
-        .move-quality.excellent {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .move-quality.good {
-            background: #d1ecf1;
-            color: #0c5460;
-        }
-
-        .move-quality.inaccuracy {
-            background: #fff3cd;
-            color: #856404;
-        }
-
-        .move-quality.mistake {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .move-quality.blunder {
-            background: #dc3545;
-            color: white;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 20px;
-            color: #666;
-        }
-
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        @media (max-width: 1200px) {
-            .analyzer-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @media (max-width: 600px) {
-            #chessboard {
-                width: 90vw;
-                height: 90vw;
-                max-width: 400px;
-                max-height: 400px;
-            }
-            .square {
-                font-size: 30px;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>♔ Chess.com Game Analyzer ♔</h1>
-            <p>Search for any Chess.com player and analyze their games with Stockfish</p>
-        </div>
-
-        <div class="search-section" id="searchSection">
-            <div class="search-box">
-                <input type="text" id="usernameInput" placeholder="Enter Chess.com username...">
-                <button onclick="searchGames()" id="searchBtn">Search Games</button>
-            </div>
-            <div id="gamesListContainer"></div>
-        </div>
-
-        <div class="analyzer-section" id="analyzerSection">
-            <button class="back-button" onclick="backToSearch()">← Back to Games</button>
-            <div class="analyzer-grid">
-                <div class="board-container">
-                    <div id="chessboard"></div>
-                    <div class="move-info" id="moveInfo">Move 0: Starting Position</div>
-                    <div class="controls">
-                        <button onclick="firstMove()" id="firstBtn">⏮ First</button>
-                        <button onclick="previousMove()" id="prevBtn">← Previous</button>
-                        <button onclick="nextMove()" id="nextBtn">Next →</button>
-                        <button onclick="lastMove()" id="lastBtn">Last ⏭</button>
-                        <button onclick="analyzePosition()" id="analyzeBtn">Analyze Position</button>
-                    </div>
-                </div>
-                <div class="analysis-panel" id="analysisPanel">
-                    <h3>Move Analysis</h3>
-                    <p style="color: #666;">Navigate through the game and click "Analyze Position" to get Stockfish analysis for each move.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
-    <script>
-        const pieceSymbols = {
+const pieceSymbols = {
             'p': '♟', 'n': '♞', 'b': '♝', 'r': '♜', 'q': '♛', 'k': '♚',
             'P': '♙', 'N': '♘', 'B': '♗', 'R': '♖', 'Q': '♕', 'K': '♔'
         };
@@ -373,10 +13,15 @@
 
         // Initialize Stockfish
         function initStockfish() {
-            stockfish = new Worker('https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js');
-            stockfish.postMessage('uci');
-            stockfish.postMessage('setoption name Skill Level value 20');
-            stockfish.postMessage('isready');
+            try {
+                stockfish = new Worker('https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js');
+                stockfish.postMessage('uci');
+                stockfish.postMessage('setoption name Hash value 16');
+                stockfish.postMessage('setoption name Threads value 1');
+                stockfish.postMessage('isready');
+            } catch (e) {
+                console.error('Stockfish initialization error:', e);
+            }
         }
 
         initStockfish();
@@ -561,21 +206,29 @@
             panel.innerHTML = '<h3>Move Analysis</h3><div class="loading"><div class="spinner"></div><p>Analyzing position with Stockfish...</p></div>';
 
             const fen = chess.fen();
-            const depth = 18;
             let bestMove = '';
             let evaluation = 0;
+            let analysisTimeout;
 
-            stockfish.postMessage(`position fen ${fen}`);
-            stockfish.postMessage(`go depth ${depth}`);
+            // Safety timeout - if no response in 3 seconds, show what we have
+            analysisTimeout = setTimeout(() => {
+                if (!bestMove) {
+                    displayAnalysis(evaluation || 0, 'timeout');
+                    btn.disabled = false;
+                    btn.textContent = 'Analyze Position';
+                }
+            }, 3000);
 
-            stockfish.onmessage = function(event) {
+            const messageHandler = function(event) {
                 const line = event.data;
                 
                 if (line.includes('bestmove')) {
+                    clearTimeout(analysisTimeout);
                     bestMove = line.split(' ')[1];
                     displayAnalysis(evaluation, bestMove);
                     btn.disabled = false;
                     btn.textContent = 'Analyze Position';
+                    stockfish.removeEventListener('message', messageHandler);
                 }
                 
                 if (line.includes('score cp')) {
@@ -590,11 +243,20 @@
                     }
                 }
             };
+
+            stockfish.addEventListener('message', messageHandler);
+            stockfish.postMessage(`position fen ${fen}`);
+            stockfish.postMessage(`go movetime 500`); // Reduced to 500ms for faster response
         }
 
         function displayAnalysis(evaluation, bestMove) {
             const panel = document.getElementById('analysisPanel');
             
+            if (bestMove === 'timeout') {
+                panel.innerHTML = '<h3>Move Analysis</h3><div class="analysis-result"><p style="color: #dc3545;">Analysis timed out. Stockfish may be loading slowly. Try again in a moment.</p></div>';
+                return;
+            }
+
             const evalClass = evaluation > 0 ? 'positive' : 'negative';
             const evalText = Math.abs(evaluation) >= 1000 ? 
                 (evaluation > 0 ? 'Mate for White' : 'Mate for Black') :
@@ -646,7 +308,7 @@
             }
             
             html += `<div class="best-move"><strong>Best continuation:</strong> ${bestMoveStr}</div>`;
-            html += `<p style="color: #666; margin-top: 10px;">Position: ${chess.fen().split(' ')[0]}</p>`;
+            html += `<p style="color: #666; margin-top: 10px; font-size: 12px;">Analysis depth: ~500ms</p>`;
             html += '</div>';
 
             panel.innerHTML = html;
@@ -673,6 +335,3 @@
                 searchGames();
             }
         });
-    </script>
-</body>
-</html>

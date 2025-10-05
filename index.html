@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess.com Game Analyzer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>♔ Chess.com Game Analyzer ♔</h1>
+            <p>Search for any Chess.com player and analyze their games with Stockfish</p>
+        </div>
+
+        <div class="search-section" id="searchSection">
+            <div class="search-box">
+                <input type="text" id="usernameInput" placeholder="Enter Chess.com username...">
+                <button onclick="searchGames()" id="searchBtn">Search Games</button>
+            </div>
+            <div id="gamesListContainer"></div>
+        </div>
+
+        <div class="analyzer-section" id="analyzerSection">
+            <button class="back-button" onclick="backToSearch()">← Back to Games</button>
+            <div class="analyzer-grid">
+                <div class="board-container">
+                    <div id="chessboard"></div>
+                    <div class="move-info" id="moveInfo">Move 0: Starting Position</div>
+                    <div class="controls">
+                        <button onclick="firstMove()" id="firstBtn">⏮ First</button>
+                        <button onclick="previousMove()" id="prevBtn">← Previous</button>
+                        <button onclick="nextMove()" id="nextBtn">Next →</button>
+                        <button onclick="lastMove()" id="lastBtn">Last ⏭</button>
+                        <button onclick="analyzePosition()" id="analyzeBtn">Analyze Position</button>
+                    </div>
+                </div>
+                <div class="analysis-panel" id="analysisPanel">
+                    <h3>Move Analysis</h3>
+                    <p style="color: #666;">Navigate through the game and click "Analyze Position" to get Stockfish analysis for each move.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
