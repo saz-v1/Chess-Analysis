@@ -256,6 +256,7 @@ body {
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  flex-shrink: 0;
 }
 
 .file-labels {
@@ -279,8 +280,13 @@ body {
   justify-content: center;
   font-size: clamp(24px, 4.5vw, 44px);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
   user-select: none;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
 }
 
 .square.light {
