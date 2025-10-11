@@ -287,6 +287,9 @@ body {
   min-width: 0;
   min-height: 0;
   position: relative;
+  font-family: "Segoe UI Symbol", "DejaVu Sans", "Noto Sans Symbols", "Apple Symbols", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .square.light {
