@@ -16,6 +16,7 @@ let moveHistory = [];
 let currentMoveIndex = -1;
 let previousEval = null;
 let gameStates = [];
+let highlightedSquares = [];
 
 // ===== CHESS ENGINE =====
 
@@ -143,7 +144,7 @@ async function searchGames() {
         
         displayGames(gamesData.games.slice(-20).reverse());
     } catch (error) {
-        container.innerHTML = `<p style="color: red;">Error: ${error.message}. Please check the username and try again.</p>`;
+        container.innerHTML = `<p style="color: #ef4444;">Error: ${error.message}. Please check the username and try again.</p>`;
     } finally {
         btn.disabled = false;
         btn.textContent = 'Search Games';
@@ -165,10 +166,14 @@ function displayGames(games) {
         
         return `
             <div class="game-card" onclick="loadGame(${index})">
-                <h3>${white} vs ${black}</h3>
-                <p>Result: ${result}</p>
-                <p>Time Control: ${game.time_class}</p>
-                <p>Date: ${date}</p>
+                <div class="game-card-header">
+                    <h3>${white} vs ${black}</h3>
+                </div>
+                <div class="game-card-details">
+                    <p><span class="label">Result:</span> ${result}</p>
+                    <p><span class="label">Time:</span> ${game.time_class}</p>
+                    <p><span class="label">Date:</span> ${date}</p>
+                </div>
             </div>
         `;
     }).join('');
@@ -186,6 +191,7 @@ function loadGame(index) {
     gameStates = [];
     currentMoveIndex = -1;
     previousEval = null;
+    highlightedSquares = [];
 
     const pgn = currentGame.pgn;
     chess.load_pgn(pgn);
@@ -209,7 +215,7 @@ function loadGame(index) {
     renderBoard();
     updateMoveInfo();
     updateButtons();
-    document.getElementById('analysisPanel').innerHTML = '<h3>Move Analysis</h3><p style="color: #666;">Navigate through the game and click "Analyze Position" to get AI analysis.</p>';
+    document.getElementById('analysisPanel').innerHTML = '<h3>Move Analysis</h3><p style="color: #737373;">Navigate through the game and click "Analyze Position" to get AI analysis.</p>';
 }
 
 // ===== BOARD RENDERING =====
@@ -223,7 +229,17 @@ function renderBoard() {
     for (let row = 0; row < 8; row++) {
         for (let col = 0; col < 8; col++) {
             const square = document.createElement('div');
+            const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+            const ranks = ['8', '7', '6', '5', '4', '3', '2', '1'];
+            const squareName = files[col] + ranks[row];
+            
             square.className = `square ${(row + col) % 2 === 0 ? 'light' : 'dark'}`;
+            square.dataset.square = squareName;
+            
+            // Check if this square should be highlighted
+            if (highlightedSquares.includes(squareName)) {
+                square.classList.add('highlight');
+            }
             
             const piece = board[row][col];
             if (piece) {
@@ -239,34 +255,27 @@ function renderBoard() {
 }
 
 function renderLabels() {
-    const letters = ['a','b','c','d','e','f','g','h'];
-    const numbers = [8,7,6,5,4,3,2,1];
+    const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+    const ranks = ['8', '7', '6', '5', '4', '3', '2', '1'];
 
-    // Letters under the board
-    const lettersRow = document.getElementById('lettersRow');
-    lettersRow.innerHTML = '';
-    letters.forEach(l => {
+    // File labels (a-h) below the board
+    const fileLabels = document.getElementById('fileLabels');
+    fileLabels.innerHTML = '';
+    files.forEach(file => {
         const span = document.createElement('span');
-        span.textContent = l;
-        span.style.flex = '1';
-        span.style.textAlign = 'center';
-        lettersRow.appendChild(span);
+        span.textContent = file;
+        fileLabels.appendChild(span);
     });
 
-    // Numbers on the left
-    const numbersCol = document.getElementById('numbersColumn');
-    numbersCol.innerHTML = '';
-    numbers.forEach(n => {
+    // Rank labels (8-1) to the left of the board
+    const rankLabels = document.getElementById('rankLabels');
+    rankLabels.innerHTML = '';
+    ranks.forEach(rank => {
         const div = document.createElement('div');
-        div.textContent = n;
-        div.style.flex = '1';
-        div.style.display = 'flex';
-        div.style.alignItems = 'center';
-        div.style.justifyContent = 'center';
-        numbersCol.appendChild(div);
+        div.textContent = rank;
+        rankLabels.appendChild(div);
     });
 }
-
 
 function updateMoveInfo() {
     const info = document.getElementById('moveInfo');
@@ -292,6 +301,7 @@ function updateButtons() {
 function firstMove() {
     currentMoveIndex = 0;
     chess.load(gameStates[currentMoveIndex]);
+    highlightedSquares = [];
     renderBoard();
     updateMoveInfo();
     updateButtons();
@@ -301,6 +311,7 @@ function previousMove() {
     if (currentMoveIndex > 0) {
         currentMoveIndex--;
         chess.load(gameStates[currentMoveIndex]);
+        highlightedSquares = [];
         renderBoard();
         updateMoveInfo();
         updateButtons();
@@ -311,6 +322,7 @@ function nextMove() {
     if (currentMoveIndex < moveHistory.length) {
         currentMoveIndex++;
         chess.load(gameStates[currentMoveIndex]);
+        highlightedSquares = [];
         renderBoard();
         updateMoveInfo();
         updateButtons();
@@ -320,6 +332,7 @@ function nextMove() {
 function lastMove() {
     currentMoveIndex = moveHistory.length;
     chess.load(gameStates[currentMoveIndex]);
+    highlightedSquares = [];
     renderBoard();
     updateMoveInfo();
     updateButtons();
@@ -342,21 +355,25 @@ function analyzePosition() {
             if (!result) {
                 panel.innerHTML = '<h3>Move Analysis</h3><div class="analysis-result"><p>Game is over or no moves available.</p></div>';
                 btn.disabled = false;
-                btn.textContent = 'Analyze Position';
+                btn.textContent = '🔍 Analyze Position';
                 return;
             }
 
             const evaluation = result.evaluation;
             const bestMove = result.move;
             
+            // Highlight the best move on the board
+            highlightedSquares = [bestMove.from, bestMove.to];
+            renderBoard();
+            
             displayAnalysis(evaluation, bestMove);
             btn.disabled = false;
-            btn.textContent = 'Analyze Position';
+            btn.textContent = '🔍 Analyze Position';
         } catch (error) {
             console.error('Analysis error:', error);
-            panel.innerHTML = '<h3>Move Analysis</h3><div class="analysis-result"><p style="color: #dc3545;">Analysis error. Please try again.</p></div>';
+            panel.innerHTML = '<h3>Move Analysis</h3><div class="analysis-result"><p style="color: #ef4444;">Analysis error. Please try again.</p></div>';
             btn.disabled = false;
-            btn.textContent = 'Analyze Position';
+            btn.textContent = '🔍 Analyze Position';
         }
     }, 50);
 }
@@ -377,23 +394,23 @@ function displayAnalysis(evaluation, bestMove) {
         const evalDiff = Math.abs(evaluation - previousEval);
 
         if (evalDiff < 0.3) {
-            moveQuality = 'Excellent Move';
+            moveQuality = '✓ Excellent Move';
             moveQualityClass = 'excellent';
             explanation = 'This is the best or near-best move in the position.';
         } else if (evalDiff < 0.8) {
-            moveQuality = 'Good Move';
+            moveQuality = '✓ Good Move';
             moveQualityClass = 'good';
             explanation = 'A solid move with minimal loss of advantage.';
         } else if (evalDiff < 1.5) {
-            moveQuality = 'Inaccuracy';
+            moveQuality = '!? Inaccuracy';
             moveQualityClass = 'inaccuracy';
             explanation = 'Not the best move, but not terrible. Small advantage lost.';
         } else if (evalDiff < 3.0) {
-            moveQuality = 'Mistake';
+            moveQuality = '? Mistake';
             moveQualityClass = 'mistake';
             explanation = 'A significant error. Considerable advantage lost.';
         } else {
-            moveQuality = 'Blunder';
+            moveQuality = '?? Blunder';
             moveQualityClass = 'blunder';
             explanation = 'A serious mistake that greatly worsens the position.';
         }
@@ -405,15 +422,22 @@ function displayAnalysis(evaluation, bestMove) {
 
     let html = '<h3>Move Analysis</h3>';
     html += '<div class="analysis-result">';
-    html += `<div class="evaluation ${evalClass}">Evaluation: ${evalText}</div>`;
+    html += `<div class="evaluation ${evalClass}">
+                <span class="eval-label">Evaluation:</span>
+                <span class="eval-value">${evalText}</span>
+             </div>`;
     
     if (moveQuality) {
         html += `<div class="move-quality ${moveQualityClass}">${moveQuality}</div>`;
-        html += `<p style="margin-top: 10px;">${explanation}</p>`;
+        html += `<p class="explanation">${explanation}</p>`;
     }
     
-    html += `<div class="best-move"><strong>Best move:</strong> ${bestMoveStr}</div>`;
-    html += `<p style="color: #666; margin-top: 10px; font-size: 12px;">Fast AI analysis (depth 3)</p>`;
+    html += `<div class="best-move">
+                <span class="best-move-label">Best move:</span>
+                <span class="best-move-value">${bestMoveStr}</span>
+                <span class="best-move-squares">${bestMove.from} → ${bestMove.to}</span>
+             </div>`;
+    html += `<p class="analysis-note">Fast AI analysis (depth 3) • Green squares show best move</p>`;
     html += '</div>';
 
     panel.innerHTML = html;
@@ -427,6 +451,7 @@ function backToSearch() {
     currentGame = null;
     chess = null;
     previousEval = null;
+    highlightedSquares = [];
 }
 
 // Enter key to search

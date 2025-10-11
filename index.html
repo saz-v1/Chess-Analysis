@@ -25,14 +25,20 @@
             <button class="back-button" onclick="backToSearch()">← Back to Games</button>
             <div class="analyzer-grid">
                 <div class="board-container">
-                    <div id="chessboard"></div>
+                    <div class="board-wrapper">
+                        <div class="rank-labels" id="rankLabels"></div>
+                        <div class="board-and-files">
+                            <div id="chessboard"></div>
+                            <div class="file-labels" id="fileLabels"></div>
+                        </div>
+                    </div>
                     <div class="move-info" id="moveInfo">Move 0: Starting Position</div>
                     <div class="controls">
                         <button onclick="firstMove()" id="firstBtn">⏮ First</button>
                         <button onclick="previousMove()" id="prevBtn">← Previous</button>
                         <button onclick="nextMove()" id="nextBtn">Next →</button>
                         <button onclick="lastMove()" id="lastBtn">Last ⏭</button>
-                        <button onclick="analyzePosition()" id="analyzeBtn">Analyze Position</button>
+                        <button onclick="analyzePosition()" id="analyzeBtn" class="analyze-btn">🔍 Analyze Position</button>
                     </div>
                 </div>
                 <div class="analysis-panel" id="analysisPanel">
