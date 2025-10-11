@@ -183,37 +183,33 @@ body {
 
 #chessboard {
   width: 100%;
-  max-width: 520px;
+  max-width: 500px;
   aspect-ratio: 1 / 1;
   display: grid;
   grid-template-columns: repeat(8, 1fr);
   grid-template-rows: repeat(8, 1fr);
-  border: 1px solid #262626;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  border: 2px solid #2a2a2a;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
 .square {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: clamp(24px, 4vw, 44px);
+  font-size: clamp(20px, 4vw, 40px);
   cursor: pointer;
-  transition: background 0.15s ease;
 }
 
 .square.light {
-  background: #262626;
+  background: #2e2e2e;
 }
 
 .square.dark {
-  background: #0a0a0a;
+  background: #121212;
 }
 
 .square.highlight {
-  background: #1a3a1a !important;
-  box-shadow: inset 0 0 0 2px rgba(74, 222, 128, 0.3);
+  background: #52734d !important; /* softer green highlight */
 }
 
 .controls {
