@@ -144,7 +144,7 @@ async function searchGames() {
         
         displayGames(gamesData.games.slice(-20).reverse());
     } catch (error) {
-        container.innerHTML = `<p style="color: #ef4444;">Error: ${error.message}. Please check the username and try again.</p>`;
+        container.innerHTML = `<p style="color: #ff4444;">Error: ${error.message}. Please check the username and try again.</p>`;
     } finally {
         btn.disabled = false;
         btn.textContent = 'Search Games';
@@ -215,7 +215,7 @@ function loadGame(index) {
     renderBoard();
     updateMoveInfo();
     updateButtons();
-    document.getElementById('analysisPanel').innerHTML = '<h3>Move Analysis</h3><p style="color: #737373;">Navigate through the game and click "Analyze Position" to get AI analysis.</p>';
+    document.getElementById('analysisPanel').innerHTML = '<h3>Move Analysis</h3><p style="color: #888888;">Navigate through the game and click "Analyze Position" to get AI analysis.</p>';
 }
 
 // ===== BOARD RENDERING =====
@@ -371,7 +371,7 @@ function analyzePosition() {
             btn.textContent = '🔍 Analyze Position';
         } catch (error) {
             console.error('Analysis error:', error);
-            panel.innerHTML = '<h3>Move Analysis</h3><div class="analysis-result"><p style="color: #ef4444;">Analysis error. Please try again.</p></div>';
+            panel.innerHTML = '<h3>Move Analysis</h3><div class="analysis-result"><p style="color: #ff4444;">Analysis error. Please try again.</p></div>';
             btn.disabled = false;
             btn.textContent = '🔍 Analyze Position';
         }
