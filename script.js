@@ -197,7 +197,34 @@ function loadGame(index) {
     highlightedSquares = [];
 
     // Determine which color the user played as
-    userColor = currentGame.white.username === currentUsername ? 'w' : 'b';
+    const whiteUsername = currentGame.white.username;
+    const blackUsername = currentGame.black.username;
+    
+    // Debug: Log detailed comparison
+    console.log('=== USER COLOR DETECTION DEBUG ===');
+    console.log(`Current Username: "${currentUsername}"`);
+    console.log(`White Username: "${whiteUsername}"`);
+    console.log(`Black Username: "${blackUsername}"`);
+    console.log(`Username lengths: current=${currentUsername.length}, white=${whiteUsername.length}, black=${blackUsername.length}`);
+    console.log(`Exact match with white: ${currentUsername === whiteUsername}`);
+    console.log(`Exact match with black: ${currentUsername === blackUsername}`);
+    console.log(`Case-insensitive match with white: ${currentUsername.toLowerCase() === whiteUsername.toLowerCase()}`);
+    console.log(`Case-insensitive match with black: ${currentUsername.toLowerCase() === blackUsername.toLowerCase()}`);
+    
+    // Try both exact and case-insensitive matching
+    if (currentUsername === whiteUsername || currentUsername.toLowerCase() === whiteUsername.toLowerCase()) {
+        userColor = 'w';
+        console.log('✅ User is WHITE');
+    } else if (currentUsername === blackUsername || currentUsername.toLowerCase() === blackUsername.toLowerCase()) {
+        userColor = 'b';
+        console.log('✅ User is BLACK');
+    } else {
+        console.log('❌ ERROR: Username not found in game! Defaulting to white.');
+        userColor = 'w'; // Default fallback
+    }
+    
+    console.log(`Final userColor: ${userColor}`);
+    console.log('=== END DEBUG ===');
 
     const pgn = currentGame.pgn;
     chess.load_pgn(pgn);
@@ -205,10 +232,19 @@ function loadGame(index) {
     const history = chess.history({ verbose: true });
     chess.reset();
     
+    // Debug: Log the move history to understand the structure
+    console.log('=== MOVE HISTORY DEBUG ===');
+    console.log(`Total moves: ${history.length}`);
+    history.forEach((move, index) => {
+        console.log(`Move ${index + 1}: ${move.san} (from ${move.from} to ${move.to}, color: ${move.color})`);
+    });
+    console.log('=== END MOVE HISTORY DEBUG ===');
+    
     gameStates.push(chess.fen());
     history.forEach(move => {
         chess.move(move);
-        moveHistory.push(move);
+        // Create a copy of the move to preserve the original data
+        moveHistory.push({...move});
         gameStates.push(chess.fen());
     });
     
@@ -233,6 +269,13 @@ function renderBoard() {
 
     // Determine if we need to flip the board (if user played as black)
     const flipBoard = userColor === 'b';
+    
+    // Debug: Log board flipping info
+    console.log(`=== BOARD RENDERING DEBUG ===`);
+    console.log(`User Color: ${userColor}`);
+    console.log(`Flip Board: ${flipBoard}`);
+    console.log(`Board will be ${flipBoard ? 'FLIPPED' : 'NORMAL'} orientation`);
+    console.log('=== END BOARD DEBUG ===');
 
     // Render squares and pieces
     for (let row = 0; row < 8; row++) {
@@ -240,7 +283,11 @@ function renderBoard() {
             const square = document.createElement('div');
             const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
             const ranks = ['8', '7', '6', '5', '4', '3', '2', '1'];
-            const squareName = files[col] + ranks[row];
+            
+            // Calculate the actual row/col for board flipping
+            const actualRow = flipBoard ? 7 - row : row;
+            const actualCol = flipBoard ? 7 - col : col;
+            const squareName = files[actualCol] + ranks[actualRow];
             
             square.className = `square ${(row + col) % 2 === 0 ? 'light' : 'dark'}`;
             square.dataset.square = squareName;
@@ -252,12 +299,8 @@ function renderBoard() {
             
             const piece = board[row][col];
             if (piece) {
-                // Simple color swap: if user played as black, swap the piece colors
-                let displayColor = piece.color;
-                if (flipBoard) {
-                    displayColor = piece.color === 'w' ? 'b' : 'w';
-                }
-                square.textContent = pieceSymbols[displayColor === 'w' ? piece.type.toUpperCase() : piece.type];
+                // Always show pieces in their true colors (no color swapping)
+                square.textContent = pieceSymbols[piece.color === 'w' ? piece.type.toUpperCase() : piece.type];
             }
             
             boardElement.appendChild(square);
@@ -271,11 +314,15 @@ function renderBoard() {
 function renderLabels() {
     const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
     const ranks = ['8', '7', '6', '5', '4', '3', '2', '1'];
+    
+    // Determine if we need to flip the labels (if user played as black)
+    const flipBoard = userColor === 'b';
 
     // File labels (a-h) below the board
     const fileLabels = document.getElementById('fileLabels');
     fileLabels.innerHTML = '';
-    files.forEach(file => {
+    const displayFiles = flipBoard ? [...files].reverse() : files;
+    displayFiles.forEach(file => {
         const span = document.createElement('span');
         span.textContent = file;
         fileLabels.appendChild(span);
@@ -284,7 +331,8 @@ function renderLabels() {
     // Rank labels (8-1) to the left of the board
     const rankLabels = document.getElementById('rankLabels');
     rankLabels.innerHTML = '';
-    ranks.forEach(rank => {
+    const displayRanks = flipBoard ? [...ranks].reverse() : ranks;
+    displayRanks.forEach(rank => {
         const div = document.createElement('div');
         div.textContent = rank;
         rankLabels.appendChild(div);
@@ -300,17 +348,36 @@ function updateMoveInfo() {
         const moveNum = Math.ceil(currentMoveIndex / 2);
         
         // Determine the actual color that made the move
-        const actualColor = currentMoveIndex % 2 === 1 ? 'w' : 'b';
+        // Use the actual move color from chess.js, with fallback to calculation
+        let actualColor = move.color;
+        
+        // Fallback: if move.color is not reliable, calculate it
+        if (!actualColor || (actualColor !== 'w' && actualColor !== 'b')) {
+            // White moves on odd move indices (1, 3, 5...), Black moves on even move indices (2, 4, 6...)
+            actualColor = currentMoveIndex % 2 === 1 ? 'w' : 'b';
+            console.log(`⚠️ Using fallback color calculation: ${actualColor}`);
+        }
+        
+        // Debug: Log move information
+        console.log(`=== MOVE ${currentMoveIndex} DEBUG ===`);
+        console.log(`Move: ${move.san}`);
+        console.log(`Move object:`, move);
+        console.log(`Actual Color (from chess.js): ${actualColor}`);
+        console.log(`User Color (what color user played): ${userColor}`);
+        console.log(`Is this the user's move? ${actualColor === userColor}`);
+        console.log(`Will display: ${actualColor === userColor ? 'You' : (actualColor === 'w' ? 'White' : 'Black')}`);
+        console.log('=== END MOVE DEBUG ===');
         
         // Show the move from the user's perspective
         let colorText;
         if (actualColor === userColor) {
             colorText = 'You';
         } else {
-            colorText = actualColor === 'w' ? 'White' : 'Black';
+            // Flip the color display - if actualColor is 'w', show 'Black', if 'b', show 'White'
+            colorText = actualColor === 'w' ? 'Black' : 'White';
         }
         
-        info.textContent = `Move ${moveNum}: ${colorText} plays ${move.san}`;
+        info.textContent = `Move ${moveNum}: ${colorText} played ${move.san}`;
     }
 }
 
