@@ -17,6 +17,8 @@ let currentMoveIndex = -1;
 let previousEval = null;
 let gameStates = [];
 let highlightedSquares = [];
+let currentUsername = '';
+let userColor = 'w'; // 'w' for white, 'b' for black
 
 // ===== CHESS ENGINE =====
 
@@ -125,6 +127,7 @@ async function searchGames() {
         return;
     }
 
+    currentUsername = username; // Store the current username
     const btn = document.getElementById('searchBtn');
     btn.disabled = true;
     btn.textContent = 'Loading...';
@@ -193,6 +196,9 @@ function loadGame(index) {
     previousEval = null;
     highlightedSquares = [];
 
+    // Determine which color the user played as
+    userColor = currentGame.white.username === currentUsername ? 'w' : 'b';
+
     const pgn = currentGame.pgn;
     chess.load_pgn(pgn);
     
@@ -225,6 +231,9 @@ function renderBoard() {
     const boardElement = document.getElementById('chessboard');
     boardElement.innerHTML = '';
 
+    // Determine if we need to flip the board (if user played as black)
+    const flipBoard = userColor === 'b';
+
     // Render squares and pieces
     for (let row = 0; row < 8; row++) {
         for (let col = 0; col < 8; col++) {
@@ -243,7 +252,12 @@ function renderBoard() {
             
             const piece = board[row][col];
             if (piece) {
-                square.textContent = pieceSymbols[piece.color === 'w' ? piece.type.toUpperCase() : piece.type];
+                // Simple color swap: if user played as black, swap the piece colors
+                let displayColor = piece.color;
+                if (flipBoard) {
+                    displayColor = piece.color === 'w' ? 'b' : 'w';
+                }
+                square.textContent = pieceSymbols[displayColor === 'w' ? piece.type.toUpperCase() : piece.type];
             }
             
             boardElement.appendChild(square);
@@ -284,8 +298,19 @@ function updateMoveInfo() {
     } else {
         const move = moveHistory[currentMoveIndex - 1];
         const moveNum = Math.ceil(currentMoveIndex / 2);
-        const color = currentMoveIndex % 2 === 1 ? 'White' : 'Black';
-        info.textContent = `Move ${moveNum}: ${color} plays ${move.san}`;
+        
+        // Determine the actual color that made the move
+        const actualColor = currentMoveIndex % 2 === 1 ? 'w' : 'b';
+        
+        // Show the move from the user's perspective
+        let colorText;
+        if (actualColor === userColor) {
+            colorText = 'You';
+        } else {
+            colorText = actualColor === 'w' ? 'White' : 'Black';
+        }
+        
+        info.textContent = `Move ${moveNum}: ${colorText} plays ${move.san}`;
     }
 }
 
@@ -452,6 +477,8 @@ function backToSearch() {
     chess = null;
     previousEval = null;
     highlightedSquares = [];
+    currentUsername = '';
+    userColor = 'w';
 }
 
 // Enter key to search
