@@ -456,23 +456,23 @@ body {
 
 .controls .analyze-btn {
   grid-column: 1 / 3;
-  background: linear-gradient(135deg, #22c55e 0%, #10b981 100%);
-  border: 1px solid rgba(34, 197, 94, 0.3);
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  border: 1px solid rgba(240, 147, 251, 0.3);
   font-weight: 600;
-  box-shadow: 0 8px 24px rgba(34, 197, 94, 0.3);
+  box-shadow: 0 8px 24px rgba(240, 147, 251, 0.3);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .controls .analyze-btn:hover:not(:disabled) {
-    background: linear-gradient(135deg, #16a34a 0%, #059669 100%);
-    box-shadow: 0 12px 32px rgba(34, 197, 94, 0.4);
+    background: linear-gradient(135deg, #e879f9 0%, #f43f5e 100%);
+    box-shadow: 0 12px 32px rgba(240, 147, 251, 0.4);
     transform: translateY(-2px);
   }
 }
 
 .controls .analyze-btn:active:not(:disabled) {
   transform: scale(0.98);
-  background: linear-gradient(135deg, #15803d 0%, #047857 100%);
+  background: linear-gradient(135deg, #d946ef 0%, #e11d48 100%);
 }
 
 .move-info {

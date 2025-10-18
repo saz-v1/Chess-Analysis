@@ -1,12 +1,14 @@
+/**
+ * Optimized Chess Analysis Application
+ * 
+ * Enhanced chess analysis with improved engine performance,
+ * better evaluation explanations, and faster analysis.
+ */
+
 // Piece symbols for display
 const pieceSymbols = {
     'p': '♟', 'n': '♞', 'b': '♝', 'r': '♜', 'q': '♛', 'k': '♚',
     'P': '♙', 'N': '♘', 'B': '♗', 'R': '♖', 'Q': '♕', 'K': '♔'
-};
-
-// Piece values for evaluation
-const pieceValues = {
-    'p': 1, 'n': 3, 'b': 3, 'r': 5, 'q': 9, 'k': 0
 };
 
 // Global state
@@ -19,6 +21,9 @@ let gameStates = [];
 let highlightedSquares = [];
 let currentUsername = '';
 let userColor = 'w'; // 'w' for white, 'b' for black
+let engineWorker = null;
+let isAnalyzing = false;
+let analysisCache = new Map();
 
 // ===== CHESS ENGINE =====
 
@@ -38,6 +43,7 @@ function evaluatePosition(game) {
         for (let j = 0; j < 8; j++) {
             const piece = board[i][j];
             if (piece) {
+                const pieceValues = { 'p': 1, 'n': 3, 'b': 3, 'r': 5, 'q': 9, 'k': 0 };
                 const value = pieceValues[piece.type];
                 const multiplier = piece.color === 'w' ? 1 : -1;
                 evaluation += value * multiplier;
@@ -116,6 +122,180 @@ function findBestMove(game, depth = 3) {
     }
 
     return { move: bestMove, evaluation: bestValue };
+}
+
+// ===== OPTIMIZED ENGINE COMMUNICATION =====
+
+/**
+ * Initialize the optimized chess engine worker
+ */
+function initializeEngine() {
+    engineWorker = new Worker('engine-worker.js');
+    
+    engineWorker.onmessage = function(e) {
+        const { type, data } = e.data;
+        
+        switch (type) {
+            case 'ENGINE_READY':
+                updateEngineStatus('Ready', 'success');
+                break;
+                
+            case 'ANALYSIS_COMPLETE':
+                handleAnalysisComplete(data);
+                break;
+                
+            case 'BEST_MOVE_FOUND':
+                handleBestMoveFound(data);
+                break;
+                
+            case 'ANALYSIS_ERROR':
+                showNotification(`Analysis Error: ${data.error}`, 'error');
+                updateEngineStatus('Error', 'error');
+                break;
+        }
+    };
+    
+    engineWorker.onerror = function(error) {
+        console.error('Engine worker error:', error);
+        showNotification('Engine Error', 'error');
+        updateEngineStatus('Error', 'error');
+    };
+}
+
+
+/**
+ * Handle analysis completion
+ */
+function handleAnalysisComplete(analysis) {
+    isAnalyzing = false;
+    showLoadingOverlay(false);
+    updateEngineStatus('Ready', 'success');
+    
+    // Cache the analysis
+    const fen = chess.fen();
+    analysisCache.set(fen, analysis);
+    
+    // Update UI with enhanced analysis
+    updateAnalysisDisplay(analysis);
+    updateEvaluationDisplay(analysis.evaluation);
+    
+    showNotification(`Analysis complete: ${analysis.quality}`, 'success');
+}
+
+/**
+ * Show/hide loading overlay
+ */
+function showLoadingOverlay(show) {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) {
+        overlay.style.display = show ? 'flex' : 'none';
+    }
+}
+
+/**
+ * Update engine status display
+ */
+function updateEngineStatus(status, type) {
+    const statusElement = document.getElementById('engineStatus');
+    if (statusElement) {
+        statusElement.textContent = status;
+        statusElement.className = `status-${type}`;
+    }
+}
+
+/**
+ * Show notification
+ */
+function showNotification(message, type) {
+    // Simple notification - could be enhanced with a proper toast system
+    console.log(`${type.toUpperCase()}: ${message}`);
+}
+
+/**
+ * Update evaluation display
+ */
+function updateEvaluationDisplay(evaluation) {
+    const evalElement = document.getElementById('evaluation');
+    if (evalElement) {
+        evalElement.textContent = evaluation.toFixed(1);
+        evalElement.className = evaluation > 0 ? 'positive' : 'negative';
+    }
+}
+
+/**
+ * Update analysis display with enhanced information
+ */
+function updateAnalysisDisplay(analysis) {
+    const analysisPanel = document.getElementById('analysis-panel');
+    const analysisContent = document.getElementById('analysis-content');
+    
+    if (!analysisPanel || !analysisContent) return;
+    
+    analysisContent.innerHTML = `
+        <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                    <div class="text-sm font-medium text-gray-600 dark:text-gray-400">Best Move</div>
+                    <div class="text-lg font-bold text-primary">${analysis.bestMove ? analysis.bestMove.san : 'N/A'}</div>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                    <div class="text-sm font-medium text-gray-600 dark:text-gray-400">Evaluation</div>
+                    <div class="text-lg font-bold">${analysis.evaluation.toFixed(1)}</div>
+                </div>
+            </div>
+            
+            <div class="bg-gradient-to-r from-blue-50 to-green-50 dark:from-blue-900 dark:to-green-900 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Move Quality</span>
+                    <span class="px-3 py-1 rounded-full text-xs font-medium ${getQualityClass(analysis.quality)}">${analysis.quality}</span>
+                </div>
+                <div class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                    ${analysis.explanation}
+                </div>
+            </div>
+            
+            <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+                <div class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Detailed Analysis</div>
+                <div class="text-sm text-gray-700 dark:text-gray-300">
+                    ${analysis.analysis}
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-3 gap-2 text-xs text-gray-500 dark:text-gray-400">
+                <div class="text-center">
+                    <div class="font-medium">Nodes</div>
+                    <div>${analysis.nodes.toLocaleString()}</div>
+                </div>
+                <div class="text-center">
+                    <div class="font-medium">Time</div>
+                    <div>${analysis.time}ms</div>
+                </div>
+                <div class="text-center">
+                    <div class="font-medium">Depth</div>
+                    <div>${analysis.depth}</div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    analysisPanel.classList.remove('hidden');
+}
+
+/**
+ * Get CSS class for move quality
+ */
+function getQualityClass(quality) {
+    const classes = {
+        'Brilliant': 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+        'Excellent': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+        'Good': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+        'Decent': 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
+        'Equal': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+        'Inaccurate': 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+        'Mistake': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+        'Blunder': 'bg-red-200 text-red-900 dark:bg-red-800 dark:text-red-100'
+    };
+    return classes[quality] || classes['Equal'];
 }
 
 // ===== GAME SEARCH =====
@@ -433,41 +613,25 @@ function lastMove() {
 // ===== ANALYSIS =====
 
 function analyzePosition() {
-    const btn = document.getElementById('analyzeBtn');
-    btn.disabled = true;
-    btn.textContent = 'Analyzing...';
-
-    const panel = document.getElementById('analysisPanel');
-    panel.innerHTML = '<h3>Move Analysis</h3><div class="loading"><div class="spinner"></div><p>Analyzing position...</p></div>';
-
-    setTimeout(() => {
-        try {
-            const result = findBestMove(chess, 3);
-            
-            if (!result) {
-                panel.innerHTML = '<h3>Move Analysis</h3><div class="analysis-result"><p>Game is over or no moves available.</p></div>';
-                btn.disabled = false;
-                btn.textContent = '🔍 Analyze Position';
-                return;
-            }
-
-            const evaluation = result.evaluation;
-            const bestMove = result.move;
-            
-            // Highlight the best move on the board
-            highlightedSquares = [bestMove.from, bestMove.to];
-            renderBoard();
-            
-            displayAnalysis(evaluation, bestMove);
-            btn.disabled = false;
-            btn.textContent = '🔍 Analyze Position';
-        } catch (error) {
-            console.error('Analysis error:', error);
-            panel.innerHTML = '<h3>Move Analysis</h3><div class="analysis-result"><p style="color: #ff4444;">Analysis error. Please try again.</p></div>';
-            btn.disabled = false;
-            btn.textContent = '🔍 Analyze Position';
-        }
-    }, 50);
+    if (!chess || isAnalyzing) return;
+    
+    const fen = chess.fen();
+    
+    // Check cache first
+    if (analysisCache.has(fen)) {
+        handleAnalysisComplete(analysisCache.get(fen));
+        return;
+    }
+    
+    isAnalyzing = true;
+    updateEngineStatus('Analyzing...', 'analyzing');
+    showLoadingOverlay(true);
+    
+    // Send board state to optimized engine
+    engineWorker.postMessage({
+        type: 'ANALYZE_POSITION',
+        data: { board: chess }
+    });
 }
 
 function displayAnalysis(evaluation, bestMove) {
@@ -553,4 +717,10 @@ document.getElementById('usernameInput').addEventListener('keypress', function(e
     if (e.key === 'Enter') {
         searchGames();
     }
+});
+
+// Initialize optimized engine on page load
+document.addEventListener('DOMContentLoaded', function() {
+    initializeEngine();
+    console.log('Optimized Chess Analysis Engine initialized');
 });
