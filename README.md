@@ -2,7 +2,7 @@
 
 Use this tool to analyze your Chess.com games. It uses AI to check each move. You do not need a Chess.com subscription.
 
-## 1 Overview
+## Overview
 
 This tool lets a Chess.com player review games and gives feedback on each move.
 
@@ -15,7 +15,7 @@ You will see the quality of each move and the best move for each position.
 
 **Why we made this tool:** Chess.com has a game review function, but you must pay for it. This tool gives you the same function for free.
 
-## 2 Functions
+## Functions
 
 - **Game search** – Enter your username to find your recent Chess.com games.
 - **Move analysis** – Move through the game, one position at a time.
@@ -25,7 +25,7 @@ You will see the quality of each move and the best move for each position.
 - **Interactive board** – The board shows the position of each piece and the coordinate labels.
 - **No cost** – You do not need to log in. The analysis is instant and free.
 
-## 3 Before You Start
+## Before You Start
 
 You need:
 
@@ -33,7 +33,7 @@ You need:
 - An internet connection, to get games from the Chess.com API.
 - A Chess.com account with games in the account.
 
-## 4 How to Use This Tool
+## How to Use This Tool
 
 1. **Enter your username.** Type your Chess.com username in the search box.
 2. **Select a game.** Click on a game from your last 20 games.
@@ -41,7 +41,7 @@ You need:
 4. **Analyze a position.** Click "Analyze Position" to see the AI evaluation.
 5. **Check the suggestion.** The best move is highlighted in green.
 
-## 5 Controls
+## Controls
 
 | Button | Function |
 |--------|----------|
@@ -51,9 +51,9 @@ You need:
 | **Last ⏭** | Go to the end of the game. |
 | **🔍 Analyze Position** | Get the AI evaluation of the current position. |
 
-## 6 How This Works
+## How This Works
 
-### 6.1 Chess Engine
+### Chess Engine
 
 A minimax algorithm with alpha-beta pruning evaluates each position.
 
@@ -61,7 +61,7 @@ A minimax algorithm with alpha-beta pruning evaluates each position.
 - **Evaluation factors:** Material count, piece position, and piece mobility.
 - **Move classification:** Based on a comparison of the evaluation before and after the move.
 
-### 6.2 Move Quality Ratings
+### Move Quality Ratings
 
 | Rating | Evaluation loss | Description |
 |--------|----------------|-------------|
@@ -71,13 +71,13 @@ A minimax algorithm with alpha-beta pruning evaluates each position.
 | ? Mistake | 1.5 to 3.0 | A significant error. |
 | ?? Blunder | More than 3.0 | A serious mistake that loses a large advantage. |
 
-### 6.3 Performance
+### Performance
 
 - **Limited depth:** A depth of 3 keeps the analysis fast.
 - **Client-side processing:** Your browser does all the computation.
 - **No server cost:** Free to run and free to use.
 
-## 7 Technical Stack
+## Technical Stack
 
 - **HTML5** – Structure and layout.
 - **CSS3** – A dark theme with gradients and animations.
@@ -85,7 +85,7 @@ A minimax algorithm with alpha-beta pruning evaluates each position.
 - **Chess.js** – A library for chess move generation and validation.
 - **Chess.com Public API** – The source of the game data.
 
-## 8 Project Structure
+## Project Structure
 
 ```
 chess-game-analyzer/
@@ -95,7 +95,7 @@ chess-game-analyzer/
 └── README.md           # Documentation
 ```
 
-## 9 Configuration
+## Configuration
 
 You can change the analysis depth in `script.js`.
 
@@ -108,14 +108,14 @@ function analyzePosition() {
 
 **Note:** Do not set the depth above 3 or 4. A higher depth can cause lag on slow devices.
 
-## 10 Privacy and Data
+## Privacy and Data
 
 - **No data storage:** The analysis happens only in your browser session.
 - **No account:** You do not need to log in or register.
 - **No tracking:** No analytics and no user tracking.
 - **Chess.com API only:** Only public game data is accessed, through the official Chess.com API.
 
-## 11 Target Users
+## Target Users
 
 - Chess.com users who want free game analysis.
 - Players who want to improve without a paid subscription.
@@ -123,7 +123,7 @@ function analyzePosition() {
 - Beginners who want to learn from their mistakes.
 - Users who are interested in chess AI and programming.
 
-## 12 Limitations
+## Limitations
 
 - **Analysis depth:** Limited to 3, for speed. Professional engines use a depth of 20 or more.
 - **Game limit:** Only your 20 most recent games are shown.
@@ -131,9 +131,9 @@ function analyzePosition() {
 - **Basic evaluation:** A simple evaluation method is used, not as accurate as Stockfish.
 - **Session only:** No analysis is saved. A page refresh clears it.
 
-## 13 Roadmap
+## Roadmap
 
-### 13.1 Planned Features
+### Planned Features
 
 - [ ] **Keyboard navigation** – Use arrow keys to move through the game.
 - [ ] **Board flip** – View the position from Black's side.
@@ -150,7 +150,7 @@ function analyzePosition() {
 - [ ] **Mobile optimization** – Improve the touch controls.
 - [ ] **Save analysis** – Export the analyzed game with notes.
 
-### 13.2 Long-Term Goals
+### Long-Term Goals
 
 - Add a stronger chess engine (WebAssembly Stockfish).
 - Add user accounts, to save the analysis history.
@@ -158,11 +158,11 @@ function analyzePosition() {
 - Add tournament game analysis.
 - Add a function for users to analyze games together.
 
-## 14 Contributions
+## Contributions
 
 This is a personal project. The code is proprietary. If you find a bug, or if you have a suggestion for a new feature, open an issue on GitHub.
 
-## 15 License
+## License
 
 **All Rights Reserved**
 
@@ -170,20 +170,20 @@ Copyright (c) 2024 Syed Zaheer.
 
 This code is the property of Syed Zaheer. You must not copy, modify, distribute, or use this software without written permission from Syed Zaheer.
 
-## 16 Author
+## Author
 
 **Syed Zaheer**
 
 Syed Zaheer is a chess enthusiast and a developer. Syed Zaheer made this tool to give all Chess.com players access to game improvement.
 
-## 17 Performance Tips
+## Performance Tips
 
 - Use Chrome or Firefox, for the best performance.
 - Close other browser tabs when you analyze a game.
 - Analyze only the positions you need. Do not analyze every move.
 - Clear the browser cache if you have a problem.
 
-## 18 Learning Resources
+## Learning Resources
 
 Read these resources to understand the code:
 
