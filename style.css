@@ -1,3 +1,15 @@
+:root {
+  --accent-rgb: 34, 197, 94;
+  --accent-2-rgb: 16, 185, 129;
+  --accent-3-rgb: 5, 150, 105;
+  --highlight-rgb: 0, 255, 136;
+  --danger-rgb: 255, 68, 68;
+  --warning-rgb: 255, 140, 0;
+  --caution-rgb: 255, 191, 0;
+
+  --board-max-width: min(520px, 90vw, calc(100vh - 300px));
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -13,10 +25,10 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", "SF Pro Display", sans-serif;
   background: #000000;
   background-image: 
-    radial-gradient(circle at 20% 50%, rgba(34, 197, 94, 0.08) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(16, 185, 129, 0.06) 0%, transparent 50%),
-    radial-gradient(circle at 40% 80%, rgba(5, 150, 105, 0.05) 0%, transparent 50%),
-    radial-gradient(circle at 60% 30%, rgba(34, 197, 94, 0.04) 0%, transparent 50%);
+    radial-gradient(circle at 20% 50%, rgba(var(--accent-rgb), 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(var(--accent-2-rgb), 0.06) 0%, transparent 50%),
+    radial-gradient(circle at 40% 80%, rgba(var(--accent-3-rgb), 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 60% 30%, rgba(var(--accent-rgb), 0.04) 0%, transparent 50%);
   background-attachment: fixed;
   color: #ffffff;
   min-height: 100vh;
@@ -46,8 +58,8 @@ body {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   margin-bottom: 0.5rem;
-  text-shadow: 0 0 40px rgba(34, 197, 94, 0.2);
-  filter: drop-shadow(0 0 20px rgba(16, 185, 129, 0.15));
+  text-shadow: 0 0 40px rgba(var(--accent-rgb), 0.2);
+  filter: drop-shadow(0 0 20px rgba(var(--accent-2-rgb), 0.15));
 }
 
 .header p {
@@ -61,9 +73,9 @@ body {
   backdrop-filter: blur(20px);
   padding: clamp(1rem, 3vw, 2rem);
   border-radius: clamp(12px, 2vw, 16px);
-  border: 1px solid rgba(34, 197, 94, 0.2);
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
   margin-bottom: clamp(1rem, 2vh, 2rem);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(34, 197, 94, 0.1), inset 0 1px 0 rgba(16, 185, 129, 0.1);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(var(--accent-rgb), 0.1), inset 0 1px 0 rgba(var(--accent-2-rgb), 0.1);
 }
 
 .search-box {
@@ -89,10 +101,10 @@ body {
 }
 
 .search-box input:focus {
-  border-color: rgba(34, 197, 94, 0.5);
+  border-color: rgba(var(--accent-rgb), 0.5);
   outline: none;
   background: rgba(0, 0, 0, 0.8);
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.2);
 }
 
 .search-box input::placeholder {
@@ -103,7 +115,7 @@ body {
   flex: 0 0 auto;
   padding: 0.875rem 2rem;
   background: linear-gradient(135deg, #22c55e 0%, #10b981 100%);
-  border: 1px solid rgba(34, 197, 94, 0.3);
+  border: 1px solid rgba(var(--accent-rgb), 0.3);
   color: #ffffff;
   border-radius: 12px;
   font-size: 1rem;
@@ -111,7 +123,7 @@ body {
   cursor: pointer;
   transition: all 0.3s ease;
   font-family: inherit;
-  box-shadow: 0 8px 24px rgba(34, 197, 94, 0.3), 0 0 0 1px rgba(16, 185, 129, 0.1);
+  box-shadow: 0 8px 24px rgba(var(--accent-rgb), 0.3), 0 0 0 1px rgba(var(--accent-2-rgb), 0.1);
   touch-action: manipulation;
   -webkit-appearance: none;
   appearance: none;
@@ -121,7 +133,7 @@ body {
   .search-box button:hover {
     transform: translateY(-2px);
     background: linear-gradient(135deg, #16a34a 0%, #059669 100%);
-    box-shadow: 0 12px 32px rgba(34, 197, 94, 0.4), 0 0 0 1px rgba(16, 185, 129, 0.2);
+    box-shadow: 0 12px 32px rgba(var(--accent-rgb), 0.4), 0 0 0 1px rgba(var(--accent-2-rgb), 0.2);
   }
 }
 
@@ -148,7 +160,7 @@ body {
   border-radius: 16px;
   cursor: pointer;
   transition: all 0.3s ease;
-  border: 1px solid rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(var(--accent-rgb), 0.15);
   position: relative;
   overflow: hidden;
 }
@@ -168,8 +180,8 @@ body {
 @media (hover: hover) and (pointer: fine) {
   .game-card:hover {
     transform: translateY(-4px);
-    border-color: rgba(34, 197, 94, 0.3);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(34, 197, 94, 0.2), inset 0 1px 0 rgba(16, 185, 129, 0.1);
+    border-color: rgba(var(--accent-rgb), 0.3);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(var(--accent-rgb), 0.2), inset 0 1px 0 rgba(var(--accent-2-rgb), 0.1);
     background: linear-gradient(135deg, rgba(0, 0, 0, 0.8) 0%, rgba(20, 20, 20, 0.6) 100%);
   }
 
@@ -208,8 +220,8 @@ body {
   backdrop-filter: blur(20px);
   padding: clamp(1rem, 3vw, 2rem);
   border-radius: clamp(12px, 2vw, 16px);
-  border: 1px solid rgba(34, 197, 94, 0.2);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(34, 197, 94, 0.1), inset 0 1px 0 rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(var(--accent-rgb), 0.1), inset 0 1px 0 rgba(var(--accent-2-rgb), 0.1);
 }
 
 .analyzer-section.active {
@@ -220,7 +232,7 @@ body {
   padding: 0.875rem 1.5rem;
   background: rgba(0, 0, 0, 0.6);
   color: #ffffff;
-  border: 1px solid rgba(34, 197, 94, 0.2);
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
   border-radius: 12px;
   cursor: pointer;
   margin-bottom: 1.5rem;
@@ -233,9 +245,9 @@ body {
 @media (hover: hover) and (pointer: fine) {
   .back-button:hover {
     background: rgba(0, 0, 0, 0.8);
-    border-color: rgba(34, 197, 94, 0.4);
+    border-color: rgba(var(--accent-rgb), 0.4);
     transform: translateX(-4px);
-    box-shadow: 0 8px 20px rgba(34, 197, 94, 0.2);
+    box-shadow: 0 8px 20px rgba(var(--accent-rgb), 0.2);
   }
 }
 
@@ -293,27 +305,27 @@ body {
 
 #chessboard {
   width: 100%;
-  max-width: min(520px, 90vw, calc(100vh - 300px));
+  max-width: var(--board-max-width);
   aspect-ratio: 1 / 1;
   display: grid;
   grid-template-columns: repeat(8, 1fr);
   grid-template-rows: repeat(8, 1fr);
-  border: 4px solid rgba(34, 197, 94, 0.3);
+  border: 4px solid rgba(var(--accent-rgb), 0.3);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(34, 197, 94, 0.1), inset 0 1px 0 rgba(16, 185, 129, 0.1);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(var(--accent-rgb), 0.1), inset 0 1px 0 rgba(var(--accent-2-rgb), 0.1);
   flex-shrink: 0;
 }
 
 @media (max-width: 1023px) {
-  #chessboard {
-    max-width: min(90vw, calc(100vh - 400px));
+  :root {
+    --board-max-width: min(90vw, calc(100vh - 400px));
   }
 }
 
 @media (max-width: 767px) {
-  #chessboard {
-    max-width: min(95vw, calc(100vh - 350px));
+  :root {
+    --board-max-width: min(95vw, calc(100vh - 350px));
   }
 }
 
@@ -323,20 +335,8 @@ body {
   color: #888888;
   font-weight: 600;
   font-size: clamp(0.75rem, 1.5vw, 0.875rem);
-  max-width: min(520px, 90vw, calc(100vh - 300px));
+  max-width: var(--board-max-width);
   width: 100%;
-}
-
-@media (max-width: 1023px) {
-  .file-labels {
-    max-width: min(90vw, calc(100vh - 400px));
-  }
-}
-
-@media (max-width: 767px) {
-  .file-labels {
-    max-width: min(95vw, calc(100vh - 350px));
-  }
 }
 
 .file-labels span {
@@ -383,16 +383,16 @@ body {
 
 .square.highlight {
   background: linear-gradient(135deg, #00ff88 0%, #00cc66 100%) !important;
-  box-shadow: inset 0 0 20px rgba(0, 255, 136, 0.4);
+  box-shadow: inset 0 0 20px rgba(var(--highlight-rgb), 0.4);
   animation: pulse 1.5s ease-in-out infinite;
 }
 
 @keyframes pulse {
   0%, 100% {
-    box-shadow: inset 0 0 20px rgba(0, 255, 136, 0.4);
+    box-shadow: inset 0 0 20px rgba(var(--highlight-rgb), 0.4);
   }
   50% {
-    box-shadow: inset 0 0 30px rgba(0, 255, 136, 0.6);
+    box-shadow: inset 0 0 30px rgba(var(--highlight-rgb), 0.6);
   }
 }
 
@@ -403,18 +403,11 @@ body {
   grid-template-rows: auto auto auto;
   gap: 0.75rem;
   width: 100%;
-  max-width: min(520px, 90vw, calc(100vh - 300px));
-}
-
-@media (max-width: 1023px) {
-  .controls {
-    max-width: min(90vw, calc(100vh - 400px));
-  }
+  max-width: var(--board-max-width);
 }
 
 @media (max-width: 767px) {
   .controls {
-    max-width: min(95vw, calc(100vh - 350px));
     gap: 0.5rem;
   }
 }
@@ -422,7 +415,7 @@ body {
 .controls button {
   padding: clamp(0.625rem, 1.5vw, 0.875rem) clamp(0.75rem, 2vw, 1rem);
   background: rgba(0, 0, 0, 0.6);
-  border: 1px solid rgba(34, 197, 94, 0.2);
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
   color: #ffffff;
   border-radius: 12px;
   cursor: pointer;
@@ -437,16 +430,16 @@ body {
 @media (hover: hover) and (pointer: fine) {
   .controls button:hover:not(:disabled) {
     background: rgba(0, 0, 0, 0.8);
-    border-color: rgba(34, 197, 94, 0.4);
+    border-color: rgba(var(--accent-rgb), 0.4);
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(34, 197, 94, 0.2);
+    box-shadow: 0 8px 20px rgba(var(--accent-rgb), 0.2);
   }
 }
 
 .controls button:active:not(:disabled) {
   transform: scale(0.98);
   background: rgba(0, 0, 0, 0.8);
-  border-color: rgba(34, 197, 94, 0.4);
+  border-color: rgba(var(--accent-rgb), 0.4);
 }
 
 .controls button:disabled {
@@ -457,15 +450,15 @@ body {
 .controls .analyze-btn {
   grid-column: 1 / 3;
   background: linear-gradient(135deg, #22c55e 0%, #10b981 100%);
-  border: 1px solid rgba(34, 197, 94, 0.3);
+  border: 1px solid rgba(var(--accent-rgb), 0.3);
   font-weight: 600;
-  box-shadow: 0 8px 24px rgba(34, 197, 94, 0.3);
+  box-shadow: 0 8px 24px rgba(var(--accent-rgb), 0.3);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .controls .analyze-btn:hover:not(:disabled) {
     background: linear-gradient(135deg, #16a34a 0%, #059669 100%);
-    box-shadow: 0 12px 32px rgba(34, 197, 94, 0.4);
+    box-shadow: 0 12px 32px rgba(var(--accent-rgb), 0.4);
     transform: translateY(-2px);
   }
 }
@@ -483,7 +476,7 @@ body {
   padding: 0.875rem 1.5rem;
   background: linear-gradient(135deg, rgba(0, 0, 0, 0.6) 0%, rgba(20, 20, 20, 0.4) 100%);
   border-radius: 12px;
-  border: 1px solid rgba(34, 197, 94, 0.2);
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
   text-align: center;
 }
 
@@ -491,7 +484,7 @@ body {
   background: linear-gradient(135deg, rgba(0, 0, 0, 0.6) 0%, rgba(20, 20, 20, 0.4) 100%);
   padding: clamp(1rem, 2vw, 1.5rem);
   border-radius: 16px;
-  border: 1px solid rgba(34, 197, 94, 0.2);
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
   max-height: min(70vh, 600px);
   overflow-y: auto;
   overflow-x: hidden;
@@ -533,7 +526,7 @@ body {
   padding: 1.25rem;
   border-radius: 12px;
   margin-bottom: 1rem;
-  border: 1px solid rgba(34, 197, 94, 0.2);
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
   border-left: 3px solid #22c55e;
 }
 
@@ -550,13 +543,13 @@ body {
 }
 
 .evaluation.positive {
-  background: rgba(0, 255, 136, 0.1);
-  border-color: rgba(0, 255, 136, 0.3);
+  background: rgba(var(--highlight-rgb), 0.1);
+  border-color: rgba(var(--highlight-rgb), 0.3);
 }
 
 .evaluation.negative {
-  background: rgba(255, 68, 68, 0.1);
-  border-color: rgba(255, 68, 68, 0.3);
+  background: rgba(var(--danger-rgb), 0.1);
+  border-color: rgba(var(--danger-rgb), 0.3);
 }
 
 .eval-label {
@@ -588,9 +581,9 @@ body {
 }
 
 .move-quality.excellent {
-  background: rgba(0, 255, 136, 0.15);
+  background: rgba(var(--highlight-rgb), 0.15);
   color: #00ff88;
-  border: 1px solid rgba(0, 255, 136, 0.3);
+  border: 1px solid rgba(var(--highlight-rgb), 0.3);
 }
 
 .move-quality.good {
@@ -600,21 +593,21 @@ body {
 }
 
 .move-quality.inaccuracy {
-  background: rgba(255, 191, 0, 0.15);
+  background: rgba(var(--caution-rgb), 0.15);
   color: #ffbf00;
-  border: 1px solid rgba(255, 191, 0, 0.3);
+  border: 1px solid rgba(var(--caution-rgb), 0.3);
 }
 
 .move-quality.mistake {
-  background: rgba(255, 140, 0, 0.15);
+  background: rgba(var(--warning-rgb), 0.15);
   color: #ff8c00;
-  border: 1px solid rgba(255, 140, 0, 0.3);
+  border: 1px solid rgba(var(--warning-rgb), 0.3);
 }
 
 .move-quality.blunder {
-  background: rgba(255, 68, 68, 0.15);
+  background: rgba(var(--danger-rgb), 0.15);
   color: #ff4444;
-  border: 1px solid rgba(255, 68, 68, 0.3);
+  border: 1px solid rgba(var(--danger-rgb), 0.3);
 }
 
 .explanation {
@@ -626,9 +619,9 @@ body {
 
 .best-move {
   padding: 0.875rem 1rem;
-  background: rgba(0, 255, 136, 0.1);
+  background: rgba(var(--highlight-rgb), 0.1);
   border-radius: 8px;
-  border: 1px solid rgba(0, 255, 136, 0.3);
+  border: 1px solid rgba(var(--highlight-rgb), 0.3);
   margin-bottom: 0.75rem;
 }
 
@@ -782,15 +775,10 @@ body {
 
   .header h1 {
     margin-bottom: 0.25rem;
-}
-
-#chessboard {
-    max-width: min(60vw, calc(100vh - 100px));
   }
 
-  .file-labels,
-  .controls {
-    max-width: min(60vw, calc(100vh - 100px));
+  :root {
+    --board-max-width: min(60vw, calc(100vh - 100px));
   }
 
   .analyzer-grid {
