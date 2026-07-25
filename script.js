@@ -1,30 +1,50 @@
-// Piece symbols for display
-const pieceSymbols = {
-    'p': '♟', 'n': '♞', 'b': '♝', 'r': '♜', 'q': '♛', 'k': '♚',
-    'P': '♙', 'N': '♘', 'B': '♗', 'R': '♖', 'Q': '♕', 'K': '♔'
+'use strict';
+
+// ===== CONSTANTS =====
+
+const PIECE_SYMBOLS = {
+    p: '♟', n: '♞', b: '♝', r: '♜', q: '♛', k: '♚',
+    P: '♙', N: '♘', B: '♗', R: '♖', Q: '♕', K: '♔'
 };
 
-// Piece values for evaluation
-const pieceValues = {
-    'p': 1, 'n': 3, 'b': 3, 'r': 5, 'q': 9, 'k': 0
-};
+const PIECE_VALUES = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
 
-// Global state
-let currentGame = null;
-let chess = null;
-let moveHistory = [];
-let currentMoveIndex = -1;
-let previousEval = null;
-let gameStates = [];
-let highlightedSquares = [];
-let currentUsername = '';
-let userColor = 'w'; // 'w' for white, 'b' for black
+const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+const RANKS = ['8', '7', '6', '5', '4', '3', '2', '1'];
+
+const ANALYSIS_DEPTH = 3;          // plies searched by the engine
+const ANALYSIS_DELAY_MS = 50;      // lets the "Analyzing..." UI paint before the (blocking) search runs
+const RECENT_GAMES_LIMIT = 20;
+const MATE_SCORE = 100;
+
+// Ordered so the first matching threshold wins (see getMoveQuality).
+const MOVE_QUALITY_THRESHOLDS = [
+    { max: 0.3, label: '✓ Excellent Move', className: 'excellent', explanation: 'This is the best or near-best move in the position.' },
+    { max: 0.8, label: '✓ Good Move', className: 'good', explanation: 'A solid move with minimal loss of advantage.' },
+    { max: 1.5, label: '!? Inaccuracy', className: 'inaccuracy', explanation: 'Not the best move, but not terrible. Small advantage lost.' },
+    { max: 3.0, label: '? Mistake', className: 'mistake', explanation: 'A significant error. Considerable advantage lost.' },
+    { max: Infinity, label: '?? Blunder', className: 'blunder', explanation: 'A serious mistake that greatly worsens the position.' }
+];
+
+// ===== APPLICATION STATE =====
+
+const state = {
+    currentGame: null,
+    chess: null,
+    moveHistory: [],       // verbose move objects, in play order
+    gameStates: [],        // FEN after each ply; gameStates[0] is the start position
+    currentMoveIndex: -1,
+    gamesCache: [],
+    highlightedSquares: [],
+    currentUsername: '',
+    userColor: 'w'          // which side the searched player was in the loaded game
+};
 
 // ===== CHESS ENGINE =====
 
 function evaluatePosition(game) {
     if (game.in_checkmate()) {
-        return game.turn() === 'w' ? -100 : 100;
+        return game.turn() === 'w' ? -MATE_SCORE : MATE_SCORE;
     }
     if (game.in_draw() || game.in_stalemate() || game.in_threefold_repetition()) {
         return 0;
@@ -32,32 +52,29 @@ function evaluatePosition(game) {
 
     let evaluation = 0;
     const board = game.board();
-    
-    // Material and positional evaluation
-    for (let i = 0; i < 8; i++) {
-        for (let j = 0; j < 8; j++) {
-            const piece = board[i][j];
-            if (piece) {
-                const value = pieceValues[piece.type];
-                const multiplier = piece.color === 'w' ? 1 : -1;
-                evaluation += value * multiplier;
-                
-                // Positional bonuses
-                if (piece.type === 'p') {
-                    const rank = piece.color === 'w' ? 7 - i : i;
-                    evaluation += (rank * 0.1) * multiplier;
-                }
-                if (piece.type === 'n' || piece.type === 'b') {
-                    const centerBonus = (3 - Math.abs(3.5 - i)) * (3 - Math.abs(3.5 - j)) * 0.05;
-                    evaluation += centerBonus * multiplier;
-                }
+
+    for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+            const piece = board[row][col];
+            if (!piece) continue;
+
+            const value = PIECE_VALUES[piece.type];
+            const sign = piece.color === 'w' ? 1 : -1;
+            evaluation += value * sign;
+
+            if (piece.type === 'p') {
+                const advancement = piece.color === 'w' ? 7 - row : row;
+                evaluation += advancement * 0.1 * sign;
+            }
+            if (piece.type === 'n' || piece.type === 'b') {
+                const centerBonus = (3 - Math.abs(3.5 - row)) * (3 - Math.abs(3.5 - col)) * 0.05;
+                evaluation += centerBonus * sign;
             }
         }
     }
 
-    // Mobility bonus
-    const moves = game.moves().length;
-    evaluation += (game.turn() === 'w' ? moves : -moves) * 0.05;
+    const mobility = game.moves().length;
+    evaluation += (game.turn() === 'w' ? mobility : -mobility) * 0.05;
 
     return evaluation;
 }
@@ -68,7 +85,7 @@ function minimax(game, depth, alpha, beta, isMaximizing) {
     }
 
     const moves = game.moves({ verbose: true });
-    
+
     if (isMaximizing) {
         let maxEval = -Infinity;
         for (const move of moves) {
@@ -80,33 +97,38 @@ function minimax(game, depth, alpha, beta, isMaximizing) {
             if (beta <= alpha) break;
         }
         return maxEval;
-    } else {
-        let minEval = Infinity;
-        for (const move of moves) {
-            game.move(move);
-            const evalScore = minimax(game, depth - 1, alpha, beta, true);
-            game.undo();
-            minEval = Math.min(minEval, evalScore);
-            beta = Math.min(beta, evalScore);
-            if (beta <= alpha) break;
-        }
-        return minEval;
     }
+
+    let minEval = Infinity;
+    for (const move of moves) {
+        game.move(move);
+        const evalScore = minimax(game, depth - 1, alpha, beta, true);
+        game.undo();
+        minEval = Math.min(minEval, evalScore);
+        beta = Math.min(beta, evalScore);
+        if (beta <= alpha) break;
+    }
+    return minEval;
 }
 
-function findBestMove(game, depth = 3) {
+/**
+ * Finds the strongest move for the side to move, and its evaluation.
+ * Operates on whatever Chess instance it is given, so callers can pass
+ * a throwaway position without disturbing the position on screen.
+ */
+function findBestMove(game, depth = ANALYSIS_DEPTH) {
     const moves = game.moves({ verbose: true });
     if (moves.length === 0) return null;
 
+    const isWhite = game.turn() === 'w';
     let bestMove = moves[0];
     let bestValue = -Infinity;
-    const isWhite = game.turn() === 'w';
 
     for (const move of moves) {
         game.move(move);
-        const value = isWhite ? 
-            -minimax(game, depth - 1, -Infinity, Infinity, false) :
-            minimax(game, depth - 1, -Infinity, Infinity, true);
+        const value = isWhite
+            ? -minimax(game, depth - 1, -Infinity, Infinity, false)
+            : minimax(game, depth - 1, -Infinity, Infinity, true);
         game.undo();
 
         if (value > bestValue) {
@@ -118,36 +140,56 @@ function findBestMove(game, depth = 3) {
     return { move: bestMove, evaluation: bestValue };
 }
 
+function getMoveQuality(evalDiff) {
+    return MOVE_QUALITY_THRESHOLDS.find(threshold => evalDiff < threshold.max);
+}
+
+// ===== SMALL UTILITIES =====
+
+function escapeHtml(value) {
+    const div = document.createElement('div');
+    div.textContent = String(value);
+    return div.innerHTML;
+}
+
+function $(id) {
+    return document.getElementById(id);
+}
+
 // ===== GAME SEARCH =====
 
 async function searchGames() {
-    const username = document.getElementById('usernameInput').value.trim();
+    const username = $('usernameInput').value.trim();
     if (!username) {
         alert('Please enter a username');
         return;
     }
 
-    currentUsername = username; // Store the current username
-    const btn = document.getElementById('searchBtn');
+    state.currentUsername = username;
+    const btn = $('searchBtn');
     btn.disabled = true;
     btn.textContent = 'Loading...';
 
-    const container = document.getElementById('gamesListContainer');
+    const container = $('gamesListContainer');
     container.innerHTML = '<div class="loading"><div class="spinner"></div><p>Fetching games...</p></div>';
 
     try {
-        const response = await fetch(`https://api.chess.com/pub/player/${username}/games/archives`);
-        if (!response.ok) throw new Error('Player not found');
-        
-        const data = await response.json();
-        const latestArchive = data.archives[data.archives.length - 1];
-        
+        const archivesResponse = await fetch(`https://api.chess.com/pub/player/${encodeURIComponent(username)}/games/archives`);
+        if (!archivesResponse.ok) throw new Error('Player not found');
+
+        const archivesData = await archivesResponse.json();
+        if (!archivesData.archives || archivesData.archives.length === 0) {
+            throw new Error('No games found for this player');
+        }
+
+        const latestArchive = archivesData.archives[archivesData.archives.length - 1];
         const gamesResponse = await fetch(latestArchive);
+        if (!gamesResponse.ok) throw new Error('Could not load games');
+
         const gamesData = await gamesResponse.json();
-        
-        displayGames(gamesData.games.slice(-20).reverse());
+        displayGames(gamesData.games.slice(-RECENT_GAMES_LIMIT).reverse());
     } catch (error) {
-        container.innerHTML = `<p style="color: #ff4444;">Error: ${error.message}. Please check the username and try again.</p>`;
+        container.innerHTML = `<p style="color: #ff4444;">Error: ${escapeHtml(error.message)}. Please check the username and try again.</p>`;
     } finally {
         btn.disabled = false;
         btn.textContent = 'Search Games';
@@ -155,26 +197,27 @@ async function searchGames() {
 }
 
 function displayGames(games) {
-    const container = document.getElementById('gamesListContainer');
+    const container = $('gamesListContainer');
     if (games.length === 0) {
         container.innerHTML = '<p>No games found.</p>';
         return;
     }
 
     const html = games.map((game, index) => {
-        const white = game.white.username;
-        const black = game.black.username;
-        const result = game.white.result;
+        const white = escapeHtml(game.white.username);
+        const black = escapeHtml(game.black.username);
+        const result = escapeHtml(game.white.result);
+        const timeClass = escapeHtml(game.time_class);
         const date = new Date(game.end_time * 1000).toLocaleDateString();
-        
+
         return `
-            <div class="game-card" onclick="loadGame(${index})">
+            <div class="game-card" data-index="${index}">
                 <div class="game-card-header">
                     <h3>${white} vs ${black}</h3>
                 </div>
                 <div class="game-card-details">
                     <p><span class="label">Result:</span> ${result}</p>
-                    <p><span class="label">Time:</span> ${game.time_class}</p>
+                    <p><span class="label">Time:</span> ${timeClass}</p>
                     <p><span class="label">Date:</span> ${date}</p>
                 </div>
             </div>
@@ -182,156 +225,116 @@ function displayGames(games) {
     }).join('');
 
     container.innerHTML = `<div class="games-list">${html}</div>`;
-    window.gamesCache = games;
+    state.gamesCache = games;
+
+    container.querySelectorAll('.game-card').forEach(card => {
+        card.addEventListener('click', () => loadGame(Number(card.dataset.index)));
+    });
 }
 
 // ===== GAME LOADING =====
 
+/** Works out which color the searched player had in this game. */
+function detectUserColor(username, whiteUsername, blackUsername) {
+    const lowerUsername = username.toLowerCase();
+    if (lowerUsername === whiteUsername.toLowerCase()) return 'w';
+    if (lowerUsername === blackUsername.toLowerCase()) return 'b';
+    return 'w'; // fallback if the username couldn't be matched
+}
+
 function loadGame(index) {
-    currentGame = window.gamesCache[index];
-    chess = new Chess();
-    moveHistory = [];
-    gameStates = [];
-    currentMoveIndex = -1;
-    previousEval = null;
-    highlightedSquares = [];
+    state.currentGame = state.gamesCache[index];
+    const pgn = state.currentGame.pgn;
 
-    // Determine which color the user played as
-    const whiteUsername = currentGame.white.username;
-    const blackUsername = currentGame.black.username;
-    
-    // Debug: Log detailed comparison
-    console.log('=== USER COLOR DETECTION DEBUG ===');
-    console.log(`Current Username: "${currentUsername}"`);
-    console.log(`White Username: "${whiteUsername}"`);
-    console.log(`Black Username: "${blackUsername}"`);
-    console.log(`Username lengths: current=${currentUsername.length}, white=${whiteUsername.length}, black=${blackUsername.length}`);
-    console.log(`Exact match with white: ${currentUsername === whiteUsername}`);
-    console.log(`Exact match with black: ${currentUsername === blackUsername}`);
-    console.log(`Case-insensitive match with white: ${currentUsername.toLowerCase() === whiteUsername.toLowerCase()}`);
-    console.log(`Case-insensitive match with black: ${currentUsername.toLowerCase() === blackUsername.toLowerCase()}`);
-    
-    // Try both exact and case-insensitive matching
-    if (currentUsername === whiteUsername || currentUsername.toLowerCase() === whiteUsername.toLowerCase()) {
-        userColor = 'w';
-        console.log('✅ User is WHITE');
-    } else if (currentUsername === blackUsername || currentUsername.toLowerCase() === blackUsername.toLowerCase()) {
-        userColor = 'b';
-        console.log('✅ User is BLACK');
-    } else {
-        console.log('❌ ERROR: Username not found in game! Defaulting to white.');
-        userColor = 'w'; // Default fallback
-    }
-    
-    console.log(`Final userColor: ${userColor}`);
-    console.log('=== END DEBUG ===');
+    state.userColor = detectUserColor(
+        state.currentUsername,
+        state.currentGame.white.username,
+        state.currentGame.black.username
+    );
 
-    const pgn = currentGame.pgn;
-    chess.load_pgn(pgn);
-    
-    const history = chess.history({ verbose: true });
-    chess.reset();
-    
-    // Debug: Log the move history to understand the structure
-    console.log('=== MOVE HISTORY DEBUG ===');
-    console.log(`Total moves: ${history.length}`);
-    history.forEach((move, index) => {
-        console.log(`Move ${index + 1}: ${move.san} (from ${move.from} to ${move.to}, color: ${move.color})`);
+    // Parse the PGN once to get the canonical move list in SAN (e.g. "Nf3", "O-O").
+    // Replaying from SAN - rather than replaying the verbose move objects chess.js
+    // hands back - is what chess.js itself considers a "legal" move, so every
+    // resulting position and move index lines up correctly with the game as played.
+    const pgnParser = new Chess();
+    pgnParser.load_pgn(pgn);
+    const sanMoves = pgnParser.history();
+
+    state.chess = new Chess();
+    state.moveHistory = [];
+    state.gameStates = [state.chess.fen()];
+    state.highlightedSquares = [];
+
+    sanMoves.forEach(san => {
+        const move = state.chess.move(san);
+        state.moveHistory.push(move);
+        state.gameStates.push(state.chess.fen());
     });
-    console.log('=== END MOVE HISTORY DEBUG ===');
-    
-    gameStates.push(chess.fen());
-    history.forEach(move => {
-        chess.move(move);
-        // Create a copy of the move to preserve the original data
-        moveHistory.push({...move});
-        gameStates.push(chess.fen());
-    });
-    
-    chess.reset();
-    currentMoveIndex = 0;
 
-    document.getElementById('searchSection').style.display = 'none';
-    document.getElementById('analyzerSection').classList.add('active');
-    
+    state.chess.reset();
+    state.currentMoveIndex = 0;
+
+    $('searchSection').style.display = 'none';
+    $('analyzerSection').classList.add('active');
+
     renderBoard();
     updateMoveInfo();
     updateButtons();
-    document.getElementById('analysisPanel').innerHTML = '<h3>Move Analysis</h3><p style="color: #888888;">Navigate through the game and click "Analyze Position" to get AI analysis.</p>';
+    $('analysisPanel').innerHTML =
+        '<h3>Move Analysis</h3><p style="color: #888888;">Navigate through the game and click "Analyze Position" to get AI analysis.</p>';
 }
 
 // ===== BOARD RENDERING =====
 
 function renderBoard() {
-    const board = chess.board();
-    const boardElement = document.getElementById('chessboard');
+    const board = state.chess.board();
+    const boardElement = $('chessboard');
     boardElement.innerHTML = '';
 
-    // Determine if we need to flip the board (if user played as black)
-    const flipBoard = userColor === 'b';
-    
-    // Debug: Log board flipping info
-    console.log(`=== BOARD RENDERING DEBUG ===`);
-    console.log(`User Color: ${userColor}`);
-    console.log(`Flip Board: ${flipBoard}`);
-    console.log(`Board will be ${flipBoard ? 'FLIPPED' : 'NORMAL'} orientation`);
-    console.log('=== END BOARD DEBUG ===');
+    const flipBoard = state.userColor === 'b';
 
-    // Render squares and pieces
     for (let row = 0; row < 8; row++) {
         for (let col = 0; col < 8; col++) {
-            const square = document.createElement('div');
-            const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
-            const ranks = ['8', '7', '6', '5', '4', '3', '2', '1'];
-            
-            // Calculate the actual row/col for board flipping
+            // The square actually shown at this grid cell, accounting for the flip.
             const actualRow = flipBoard ? 7 - row : row;
             const actualCol = flipBoard ? 7 - col : col;
-            const squareName = files[actualCol] + ranks[actualRow];
-            
+            const squareName = FILES[actualCol] + RANKS[actualRow];
+
+            const square = document.createElement('div');
             square.className = `square ${(row + col) % 2 === 0 ? 'light' : 'dark'}`;
             square.dataset.square = squareName;
-            
-            // Check if this square should be highlighted
-            if (highlightedSquares.includes(squareName)) {
+
+            if (state.highlightedSquares.includes(squareName)) {
                 square.classList.add('highlight');
             }
-            
-            const piece = board[row][col];
+
+            // Look up the piece using the same flipped coordinates as the square
+            // name above, so the piece drawn always matches the label under it.
+            const piece = board[actualRow][actualCol];
             if (piece) {
-                // Always show pieces in their true colors (no color swapping)
-                square.textContent = pieceSymbols[piece.color === 'w' ? piece.type.toUpperCase() : piece.type];
+                square.textContent = PIECE_SYMBOLS[piece.color === 'w' ? piece.type.toUpperCase() : piece.type];
             }
-            
+
             boardElement.appendChild(square);
         }
     }
 
-    // Render labels
-    renderLabels();
+    renderLabels(flipBoard);
 }
 
-function renderLabels() {
-    const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
-    const ranks = ['8', '7', '6', '5', '4', '3', '2', '1'];
-    
-    // Determine if we need to flip the labels (if user played as black)
-    const flipBoard = userColor === 'b';
-
-    // File labels (a-h) below the board
-    const fileLabels = document.getElementById('fileLabels');
+function renderLabels(flipBoard) {
+    const fileLabels = $('fileLabels');
     fileLabels.innerHTML = '';
-    const displayFiles = flipBoard ? [...files].reverse() : files;
+    const displayFiles = flipBoard ? [...FILES].reverse() : FILES;
     displayFiles.forEach(file => {
         const span = document.createElement('span');
         span.textContent = file;
         fileLabels.appendChild(span);
     });
 
-    // Rank labels (8-1) to the left of the board
-    const rankLabels = document.getElementById('rankLabels');
+    const rankLabels = $('rankLabels');
     rankLabels.innerHTML = '';
-    const displayRanks = flipBoard ? [...ranks].reverse() : ranks;
+    const displayRanks = flipBoard ? [...RANKS].reverse() : RANKS;
     displayRanks.forEach(rank => {
         const div = document.createElement('div');
         div.textContent = rank;
@@ -340,110 +343,79 @@ function renderLabels() {
 }
 
 function updateMoveInfo() {
-    const info = document.getElementById('moveInfo');
-    if (currentMoveIndex === 0) {
+    const info = $('moveInfo');
+
+    if (state.currentMoveIndex === 0) {
         info.textContent = 'Move 0: Starting Position';
-    } else {
-        const move = moveHistory[currentMoveIndex - 1];
-        const moveNum = Math.ceil(currentMoveIndex / 2);
-        
-        // Determine the actual color that made the move
-        // Use the actual move color from chess.js, with fallback to calculation
-        let actualColor = move.color;
-        
-        // Fallback: if move.color is not reliable, calculate it
-        if (!actualColor || (actualColor !== 'w' && actualColor !== 'b')) {
-            // White moves on odd move indices (1, 3, 5...), Black moves on even move indices (2, 4, 6...)
-            actualColor = currentMoveIndex % 2 === 1 ? 'w' : 'b';
-            console.log(`⚠️ Using fallback color calculation: ${actualColor}`);
-        }
-        
-        // Debug: Log move information
-        console.log(`=== MOVE ${currentMoveIndex} DEBUG ===`);
-        console.log(`Move: ${move.san}`);
-        console.log(`Move object:`, move);
-        console.log(`Actual Color (from chess.js): ${actualColor}`);
-        console.log(`User Color (what color user played): ${userColor}`);
-        console.log(`Is this the user's move? ${actualColor === userColor}`);
-        console.log(`Will display: ${actualColor === userColor ? 'You' : (actualColor === 'w' ? 'White' : 'Black')}`);
-        console.log('=== END MOVE DEBUG ===');
-        
-        // Show the move from the user's perspective
-        let colorText;
-        if (actualColor === userColor) {
-            colorText = 'You';
-        } else {
-            // Flip the color display - if actualColor is 'w', show 'Black', if 'b', show 'White'
-            colorText = actualColor === 'w' ? 'Black' : 'White';
-        }
-        
-        info.textContent = `Move ${moveNum}: ${colorText} played ${move.san}`;
+        return;
     }
+
+    const move = state.moveHistory[state.currentMoveIndex - 1];
+    const moveNumber = Math.ceil(state.currentMoveIndex / 2);
+    const colorText = move.color === state.userColor
+        ? 'You'
+        : (move.color === 'w' ? 'White' : 'Black');
+
+    info.textContent = `Move ${moveNumber}: ${colorText} played ${move.san}`;
 }
 
 function updateButtons() {
-    document.getElementById('firstBtn').disabled = currentMoveIndex === 0;
-    document.getElementById('prevBtn').disabled = currentMoveIndex === 0;
-    document.getElementById('nextBtn').disabled = currentMoveIndex >= moveHistory.length;
-    document.getElementById('lastBtn').disabled = currentMoveIndex >= moveHistory.length;
+    const atStart = state.currentMoveIndex === 0;
+    const atEnd = state.currentMoveIndex >= state.moveHistory.length;
+
+    $('firstBtn').disabled = atStart;
+    $('prevBtn').disabled = atStart;
+    $('nextBtn').disabled = atEnd;
+    $('lastBtn').disabled = atEnd;
 }
 
 // ===== NAVIGATION =====
 
-function firstMove() {
-    currentMoveIndex = 0;
-    chess.load(gameStates[currentMoveIndex]);
-    highlightedSquares = [];
+function goToMove(index) {
+    state.currentMoveIndex = index;
+    state.chess.load(state.gameStates[index]);
+    state.highlightedSquares = [];
     renderBoard();
     updateMoveInfo();
     updateButtons();
 }
 
+function firstMove() {
+    goToMove(0);
+}
+
 function previousMove() {
-    if (currentMoveIndex > 0) {
-        currentMoveIndex--;
-        chess.load(gameStates[currentMoveIndex]);
-        highlightedSquares = [];
-        renderBoard();
-        updateMoveInfo();
-        updateButtons();
+    if (state.currentMoveIndex > 0) {
+        goToMove(state.currentMoveIndex - 1);
     }
 }
 
 function nextMove() {
-    if (currentMoveIndex < moveHistory.length) {
-        currentMoveIndex++;
-        chess.load(gameStates[currentMoveIndex]);
-        highlightedSquares = [];
-        renderBoard();
-        updateMoveInfo();
-        updateButtons();
+    if (state.currentMoveIndex < state.moveHistory.length) {
+        goToMove(state.currentMoveIndex + 1);
     }
 }
 
 function lastMove() {
-    currentMoveIndex = moveHistory.length;
-    chess.load(gameStates[currentMoveIndex]);
-    highlightedSquares = [];
-    renderBoard();
-    updateMoveInfo();
-    updateButtons();
+    goToMove(state.moveHistory.length);
 }
 
 // ===== ANALYSIS =====
 
 function analyzePosition() {
-    const btn = document.getElementById('analyzeBtn');
+    const btn = $('analyzeBtn');
     btn.disabled = true;
     btn.textContent = 'Analyzing...';
 
-    const panel = document.getElementById('analysisPanel');
+    const panel = $('analysisPanel');
     panel.innerHTML = '<h3>Move Analysis</h3><div class="loading"><div class="spinner"></div><p>Analyzing position...</p></div>';
 
+    // Deferred so the "Analyzing..." state has a chance to paint before the
+    // (synchronous, potentially slow) search blocks the main thread.
     setTimeout(() => {
         try {
-            const result = findBestMove(chess, 3);
-            
+            const result = findBestMove(state.chess, ANALYSIS_DEPTH);
+
             if (!result) {
                 panel.innerHTML = '<h3>Move Analysis</h3><div class="analysis-result"><p>Game is over or no moves available.</p></div>';
                 btn.disabled = false;
@@ -451,66 +423,41 @@ function analyzePosition() {
                 return;
             }
 
-            const evaluation = result.evaluation;
-            const bestMove = result.move;
-            
-            // Highlight the best move on the board
-            highlightedSquares = [bestMove.from, bestMove.to];
+            state.highlightedSquares = [result.move.from, result.move.to];
             renderBoard();
-            
-            displayAnalysis(evaluation, bestMove);
-            btn.disabled = false;
-            btn.textContent = '🔍 Analyze Position';
+
+            // Evaluate the position immediately before this move fresh, on a
+            // throwaway board, rather than reusing whatever was last analyzed.
+            // That keeps the move-quality rating correct even when the user
+            // jumps around the game instead of analyzing every move in order.
+            let priorEvaluation = null;
+            if (state.currentMoveIndex > 0) {
+                const priorPosition = new Chess(state.gameStates[state.currentMoveIndex - 1]);
+                const priorResult = findBestMove(priorPosition, ANALYSIS_DEPTH);
+                priorEvaluation = priorResult ? priorResult.evaluation : null;
+            }
+
+            displayAnalysis(result.evaluation, result.move, priorEvaluation);
         } catch (error) {
             console.error('Analysis error:', error);
             panel.innerHTML = '<h3>Move Analysis</h3><div class="analysis-result"><p style="color: #ff4444;">Analysis error. Please try again.</p></div>';
+        } finally {
             btn.disabled = false;
             btn.textContent = '🔍 Analyze Position';
         }
-    }, 50);
+    }, ANALYSIS_DELAY_MS);
 }
 
-function displayAnalysis(evaluation, bestMove) {
-    const panel = document.getElementById('analysisPanel');
+function displayAnalysis(evaluation, bestMove, priorEvaluation) {
+    const panel = $('analysisPanel');
 
     const evalClass = evaluation > 0 ? 'positive' : 'negative';
-    const evalText = Math.abs(evaluation) >= 50 ? 
-        (evaluation > 0 ? 'Mate for White' : 'Mate for Black') :
-        `${evaluation > 0 ? '+' : ''}${evaluation.toFixed(2)}`;
+    const evalText = Math.abs(evaluation) >= MATE_SCORE / 2
+        ? (evaluation > 0 ? 'Mate for White' : 'Mate for Black')
+        : `${evaluation > 0 ? '+' : ''}${evaluation.toFixed(2)}`;
 
-    let moveQuality = '';
-    let moveQualityClass = '';
-    let explanation = '';
-
-    if (currentMoveIndex > 0 && previousEval !== null) {
-        const evalDiff = Math.abs(evaluation - previousEval);
-
-        if (evalDiff < 0.3) {
-            moveQuality = '✓ Excellent Move';
-            moveQualityClass = 'excellent';
-            explanation = 'This is the best or near-best move in the position.';
-        } else if (evalDiff < 0.8) {
-            moveQuality = '✓ Good Move';
-            moveQualityClass = 'good';
-            explanation = 'A solid move with minimal loss of advantage.';
-        } else if (evalDiff < 1.5) {
-            moveQuality = '!? Inaccuracy';
-            moveQualityClass = 'inaccuracy';
-            explanation = 'Not the best move, but not terrible. Small advantage lost.';
-        } else if (evalDiff < 3.0) {
-            moveQuality = '? Mistake';
-            moveQualityClass = 'mistake';
-            explanation = 'A significant error. Considerable advantage lost.';
-        } else {
-            moveQuality = '?? Blunder';
-            moveQualityClass = 'blunder';
-            explanation = 'A serious mistake that greatly worsens the position.';
-        }
-    }
-
-    previousEval = evaluation;
-
-    const bestMoveStr = bestMove.san || `${bestMove.from} → ${bestMove.to}`;
+    const quality = priorEvaluation !== null ? getMoveQuality(Math.abs(evaluation - priorEvaluation)) : null;
+    const bestMoveText = bestMove.san || `${bestMove.from} → ${bestMove.to}`;
 
     let html = '<h3>Move Analysis</h3>';
     html += '<div class="analysis-result">';
@@ -518,39 +465,49 @@ function displayAnalysis(evaluation, bestMove) {
                 <span class="eval-label">Evaluation:</span>
                 <span class="eval-value">${evalText}</span>
              </div>`;
-    
-    if (moveQuality) {
-        html += `<div class="move-quality ${moveQualityClass}">${moveQuality}</div>`;
-        html += `<p class="explanation">${explanation}</p>`;
+
+    if (quality) {
+        html += `<div class="move-quality ${quality.className}">${quality.label}</div>`;
+        html += `<p class="explanation">${quality.explanation}</p>`;
     }
-    
+
     html += `<div class="best-move">
                 <span class="best-move-label">Best move:</span>
-                <span class="best-move-value">${bestMoveStr}</span>
+                <span class="best-move-value">${bestMoveText}</span>
                 <span class="best-move-squares">${bestMove.from} → ${bestMove.to}</span>
              </div>`;
-    html += `<p class="analysis-note">Fast AI analysis (depth 3) • Green squares show best move</p>`;
+    html += `<p class="analysis-note">Fast AI analysis (depth ${ANALYSIS_DEPTH}) • Green squares show best move</p>`;
     html += '</div>';
 
     panel.innerHTML = html;
 }
 
-// ===== UTILITY =====
+// ===== NAVIGATION BACK TO SEARCH =====
 
 function backToSearch() {
-    document.getElementById('searchSection').style.display = 'block';
-    document.getElementById('analyzerSection').classList.remove('active');
-    currentGame = null;
-    chess = null;
-    previousEval = null;
-    highlightedSquares = [];
-    currentUsername = '';
-    userColor = 'w';
+    $('searchSection').style.display = 'block';
+    $('analyzerSection').classList.remove('active');
+    state.currentGame = null;
+    state.chess = null;
+    state.highlightedSquares = [];
+    state.currentUsername = '';
+    state.userColor = 'w';
 }
 
-// Enter key to search
-document.getElementById('usernameInput').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        searchGames();
-    }
-});
+// ===== INITIALIZATION =====
+
+function init() {
+    $('searchBtn').addEventListener('click', searchGames);
+    $('usernameInput').addEventListener('keypress', event => {
+        if (event.key === 'Enter') searchGames();
+    });
+
+    $('backButton').addEventListener('click', backToSearch);
+    $('prevBtn').addEventListener('click', previousMove);
+    $('nextBtn').addEventListener('click', nextMove);
+    $('firstBtn').addEventListener('click', firstMove);
+    $('lastBtn').addEventListener('click', lastMove);
+    $('analyzeBtn').addEventListener('click', analyzePosition);
+}
+
+document.addEventListener('DOMContentLoaded', init);
