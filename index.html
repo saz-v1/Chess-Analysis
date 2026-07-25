@@ -16,13 +16,13 @@
         <div class="search-section" id="searchSection">
             <div class="search-box">
                 <input type="text" id="usernameInput" placeholder="Enter Chess.com username...">
-                <button onclick="searchGames()" id="searchBtn">Search Games</button>
-                </div>
-                <div id="gamesListContainer"></div>
+                <button id="searchBtn">Search Games</button>
             </div>
+            <div id="gamesListContainer"></div>
+        </div>
 
         <div class="analyzer-section" id="analyzerSection">
-            <button class="back-button" onclick="backToSearch()">← Back to Games</button>
+            <button class="back-button" id="backButton">← Back to Games</button>
             <div class="analyzer-grid">
                 <div class="board-container">
                     <div class="board-wrapper">
@@ -31,14 +31,14 @@
                             <div id="chessboard"></div>
                             <div class="file-labels" id="fileLabels"></div>
                         </div>
-                        </div>
+                    </div>
                     <div class="move-info" id="moveInfo">Move 0: Starting Position</div>
                     <div class="controls">
-                        <button onclick="previousMove()" id="prevBtn">← Previous</button>
-                        <button onclick="nextMove()" id="nextBtn">Next →</button>
-                        <button onclick="firstMove()" id="firstBtn">⏮ First</button>
-                        <button onclick="lastMove()" id="lastBtn">Last ⏭</button>
-                        <button onclick="analyzePosition()" id="analyzeBtn" class="analyze-btn">🔍 Analyze Position</button>
+                        <button id="prevBtn">← Previous</button>
+                        <button id="nextBtn">Next →</button>
+                        <button id="firstBtn">⏮ First</button>
+                        <button id="lastBtn">Last ⏭</button>
+                        <button id="analyzeBtn" class="analyze-btn">🔍 Analyze Position</button>
                     </div>
                 </div>
                 <div class="analysis-panel" id="analysisPanel">
