@@ -37,6 +37,9 @@ const state = {
     gamesCache: [],
     highlightedSquares: [],
     currentUsername: '',
+    analysisToken: 0,
+    analysisWorker: null,
+    orientation: 'w',
     userColor: 'w'          // which side the searched player was in the loaded game
 };
 
@@ -117,6 +120,7 @@ function minimax(game, depth, alpha, beta, isMaximizing) {
  * a throwaway position without disturbing the position on screen.
  */
 function findBestMove(game, depth = ANALYSIS_DEPTH) {
+    if (game.game_over()) return null;
     const moves = game.moves({ verbose: true });
     if (moves.length === 0) return null;
 
@@ -127,8 +131,8 @@ function findBestMove(game, depth = ANALYSIS_DEPTH) {
     for (const move of moves) {
         game.move(move);
         const value = isWhite
-            ? -minimax(game, depth - 1, -Infinity, Infinity, false)
-            : minimax(game, depth - 1, -Infinity, Infinity, true);
+            ? minimax(game, depth - 1, -Infinity, Infinity, false)
+            : -minimax(game, depth - 1, -Infinity, Infinity, true);
         game.undo();
 
         if (value > bestValue) {
@@ -137,7 +141,7 @@ function findBestMove(game, depth = ANALYSIS_DEPTH) {
         }
     }
 
-    return { move: bestMove, evaluation: bestValue };
+    return { move: bestMove, evaluation: isWhite ? bestValue : -bestValue };
 }
 
 function getMoveQuality(evalDiff) {
@@ -159,6 +163,7 @@ function $(id) {
 // ===== GAME SEARCH =====
 
 async function searchGames() {
+    if ($('searchBtn').disabled) return;
     const username = $('usernameInput').value.trim();
     if (!username) {
         alert('Please enter a username');
@@ -187,7 +192,7 @@ async function searchGames() {
         if (!gamesResponse.ok) throw new Error('Could not load games');
 
         const gamesData = await gamesResponse.json();
-        displayGames(gamesData.games.slice(-RECENT_GAMES_LIMIT).reverse());
+        displayGames(gamesData.games.filter(game => game.rules === 'chess').slice(-RECENT_GAMES_LIMIT).reverse());
     } catch (error) {
         container.innerHTML = `<p style="color: #ff4444;">Error: ${escapeHtml(error.message)}. Please check the username and try again.</p>`;
     } finally {
@@ -206,21 +211,22 @@ function displayGames(games) {
     const html = games.map((game, index) => {
         const white = escapeHtml(game.white.username);
         const black = escapeHtml(game.black.username);
-        const result = escapeHtml(game.white.result);
+        const side = detectUserColor(state.currentUsername, game.white.username, game.black.username);
+        const result = escapeHtml(game[side === 'w' ? 'white' : 'black'].result);
         const timeClass = escapeHtml(game.time_class);
         const date = new Date(game.end_time * 1000).toLocaleDateString();
 
         return `
-            <div class="game-card" data-index="${index}">
+            <button class="game-card" data-index="${index}">
                 <div class="game-card-header">
-                    <h3>${white} vs ${black}</h3>
+                    <h3>○ ${white} <span class="versus">vs</span> ● ${black}</h3>
                 </div>
                 <div class="game-card-details">
                     <p><span class="label">Result:</span> ${result}</p>
                     <p><span class="label">Time:</span> ${timeClass}</p>
                     <p><span class="label">Date:</span> ${date}</p>
                 </div>
-            </div>
+            </button>
         `;
     }).join('');
 
@@ -257,10 +263,14 @@ function loadGame(index) {
     // hands back - is what chess.js itself considers a "legal" move, so every
     // resulting position and move index lines up correctly with the game as played.
     const pgnParser = new Chess();
-    pgnParser.load_pgn(pgn);
+    if (!pgnParser.load_pgn(pgn)) {
+        $('gamesListContainer').insertAdjacentHTML('afterbegin', '<p role="alert">This game could not be read. Please choose another game.</p>');
+        return;
+    }
     const sanMoves = pgnParser.history();
 
-    state.chess = new Chess();
+    state.orientation = state.userColor;
+    state.chess = new Chess(pgnParser.header().FEN || undefined);
     state.moveHistory = [];
     state.gameStates = [state.chess.fen()];
     state.highlightedSquares = [];
@@ -271,17 +281,13 @@ function loadGame(index) {
         state.gameStates.push(state.chess.fen());
     });
 
-    state.chess.reset();
+    state.chess.load(state.gameStates[0]);
     state.currentMoveIndex = 0;
 
     $('searchSection').style.display = 'none';
     $('analyzerSection').classList.add('active');
 
-    renderBoard();
-    updateMoveInfo();
-    updateButtons();
-    $('analysisPanel').innerHTML =
-        '<h3>Move Analysis</h3><p style="color: #888888;">Navigate through the game and click "Analyze Position" to get AI analysis.</p>';
+    goToMove(0);
 }
 
 // ===== BOARD RENDERING =====
@@ -291,7 +297,7 @@ function renderBoard() {
     const boardElement = $('chessboard');
     boardElement.innerHTML = '';
 
-    const flipBoard = state.userColor === 'b';
+    const flipBoard = state.orientation === 'b';
 
     for (let row = 0; row < 8; row++) {
         for (let col = 0; col < 8; col++) {
@@ -312,7 +318,11 @@ function renderBoard() {
             // name above, so the piece drawn always matches the label under it.
             const piece = board[actualRow][actualCol];
             if (piece) {
-                square.textContent = PIECE_SYMBOLS[piece.color === 'w' ? piece.type.toUpperCase() : piece.type];
+                const glyph = document.createElement('span');
+                glyph.className = `piece ${piece.color === 'w' ? 'white-piece' : 'black-piece'}`;
+                glyph.textContent = PIECE_SYMBOLS[piece.type];
+                square.appendChild(glyph);
+                square.setAttribute('aria-label', `${squareName}: ${piece.color === 'w' ? 'White' : 'Black'} ${piece.type}`);
             }
 
             boardElement.appendChild(square);
@@ -320,6 +330,7 @@ function renderBoard() {
     }
 
     renderLabels(flipBoard);
+    renderPlayers();
 }
 
 function renderLabels(flipBoard) {
@@ -342,21 +353,29 @@ function renderLabels(flipBoard) {
     });
 }
 
-function updateMoveInfo() {
-    const info = $('moveInfo');
+function playerName(color) {
+    return state.currentGame[color === 'w' ? 'white' : 'black'].username;
+}
 
-    if (state.currentMoveIndex === 0) {
-        info.textContent = 'Move 0: Starting Position';
-        return;
+function renderPlayers() {
+    const bottom = state.orientation;
+    for (const [id, color] of [['bottomPlayer', bottom], ['topPlayer', bottom === 'w' ? 'b' : 'w']]) {
+        const player = state.currentGame[color === 'w' ? 'white' : 'black'];
+        $(id).innerHTML = `<span class="player-dot ${color}"></span><strong>${escapeHtml(player.username)}</strong><span>${color === 'w' ? 'White' : 'Black'} · ${player.rating || 'Unrated'}</span>${state.chess.turn() === color && !state.chess.game_over() ? '<small>To move</small>' : ''}`;
     }
+}
 
-    const move = state.moveHistory[state.currentMoveIndex - 1];
-    const moveNumber = Math.ceil(state.currentMoveIndex / 2);
-    const colorText = move.color === state.userColor
-        ? 'You'
-        : (move.color === 'w' ? 'White' : 'Black');
+function moveLabel(index) {
+    const move = state.moveHistory[index - 1];
+    const number = state.gameStates[index - 1].split(' ')[5];
+    return `${number}${move.color === 'w' ? '.' : '...'} ${move.san}`;
+}
 
-    info.textContent = `Move ${moveNumber}: ${colorText} played ${move.san}`;
+function updateMoveInfo() {
+    const index = state.currentMoveIndex;
+    const status = state.chess.in_checkmate() ? 'Checkmate' : state.chess.in_draw() ? 'Draw' : `${state.chess.turn() === 'w' ? 'White' : 'Black'} to move${state.chess.in_check() ? ' · Check' : ''}`;
+    $('moveInfo').textContent = `${index ? moveLabel(index) + ' · ' + playerName(state.moveHistory[index - 1].color) + ' played' : 'Starting position'} — ${status}`;
+    $('moveList').innerHTML = state.moveHistory.map((move, i) => `<button data-ply="${i + 1}" class="${i + 1 === index ? 'selected' : ''}" aria-current="${i + 1 === index ? 'step' : 'false'}">${moveLabel(i + 1)}</button>`).join('');
 }
 
 function updateButtons() {
@@ -372,9 +391,16 @@ function updateButtons() {
 // ===== NAVIGATION =====
 
 function goToMove(index) {
+    if (!state.chess || index < 0 || index >= state.gameStates.length) return;
+    state.analysisToken++;
+    if (state.analysisWorker) { state.analysisWorker.terminate(); state.analysisWorker = null; }
     state.currentMoveIndex = index;
-    state.chess.load(state.gameStates[index]);
-    state.highlightedSquares = [];
+    state.chess = positionAt(index);
+    const last = state.moveHistory[index - 1];
+    state.highlightedSquares = last ? [last.from, last.to] : [];
+    $('analyzeBtn').disabled = false;
+    $('analyzeBtn').textContent = index ? 'Analyze this move' : 'Analyze position';
+    $('analysisPanel').innerHTML = '<h3>Position review</h3><p>Analyze the selected move to compare it with the best alternative. Board highlights show the move just played.</p><p class="analysis-note">Local depth-3 engine · approximate analysis</p>';
     renderBoard();
     updateMoveInfo();
     updateButtons();
@@ -402,84 +428,73 @@ function lastMove() {
 
 // ===== ANALYSIS =====
 
-function analyzePosition() {
-    const btn = $('analyzeBtn');
-    btn.disabled = true;
-    btn.textContent = 'Analyzing...';
-
-    const panel = $('analysisPanel');
-    panel.innerHTML = '<h3>Move Analysis</h3><div class="loading"><div class="spinner"></div><p>Analyzing position...</p></div>';
-
-    // Deferred so the "Analyzing..." state has a chance to paint before the
-    // (synchronous, potentially slow) search blocks the main thread.
-    setTimeout(() => {
-        try {
-            const result = findBestMove(state.chess, ANALYSIS_DEPTH);
-
-            if (!result) {
-                panel.innerHTML = '<h3>Move Analysis</h3><div class="analysis-result"><p>Game is over or no moves available.</p></div>';
-                btn.disabled = false;
-                btn.textContent = '🔍 Analyze Position';
-                return;
-            }
-
-            state.highlightedSquares = [result.move.from, result.move.to];
-            renderBoard();
-
-            // Evaluate the position immediately before this move fresh, on a
-            // throwaway board, rather than reusing whatever was last analyzed.
-            // That keeps the move-quality rating correct even when the user
-            // jumps around the game instead of analyzing every move in order.
-            let priorEvaluation = null;
-            if (state.currentMoveIndex > 0) {
-                const priorPosition = new Chess(state.gameStates[state.currentMoveIndex - 1]);
-                const priorResult = findBestMove(priorPosition, ANALYSIS_DEPTH);
-                priorEvaluation = priorResult ? priorResult.evaluation : null;
-            }
-
-            displayAnalysis(result.evaluation, result.move, priorEvaluation);
-        } catch (error) {
-            console.error('Analysis error:', error);
-            panel.innerHTML = '<h3>Move Analysis</h3><div class="analysis-result"><p style="color: #ff4444;">Analysis error. Please try again.</p></div>';
-        } finally {
-            btn.disabled = false;
-            btn.textContent = '🔍 Analyze Position';
-        }
-    }, ANALYSIS_DELAY_MS);
+function positionAt(index) {
+    const game = new Chess(state.gameStates[0]);
+    for (let i = 0; i < index; i++) game.move(state.moveHistory[i].san);
+    return game;
 }
 
-function displayAnalysis(evaluation, bestMove, priorEvaluation) {
-    const panel = $('analysisPanel');
+function calculateReview(fen, moves) {
+    const position = new Chess(fen);
+    let best = null;
+    let actual = null;
+    moves.forEach((san, index) => {
+        if (index === moves.length - 1) best = findBestMove(position);
+        position.move(san);
+    });
+    if (moves.length) actual = minimax(position, ANALYSIS_DEPTH - 1, -Infinity, Infinity, position.turn() === 'w');
+    const reply = findBestMove(position);
+    return { reply, best, actual, evaluation: reply ? reply.evaluation : evaluatePosition(position) };
+}
 
-    const evalClass = evaluation > 0 ? 'positive' : 'negative';
-    const evalText = Math.abs(evaluation) >= MATE_SCORE / 2
-        ? (evaluation > 0 ? 'Mate for White' : 'Mate for Black')
-        : `${evaluation > 0 ? '+' : ''}${evaluation.toFixed(2)}`;
-
-    const quality = priorEvaluation !== null ? getMoveQuality(Math.abs(evaluation - priorEvaluation)) : null;
-    const bestMoveText = bestMove.san || `${bestMove.from} → ${bestMove.to}`;
-
-    let html = '<h3>Move Analysis</h3>';
-    html += '<div class="analysis-result">';
-    html += `<div class="evaluation ${evalClass}">
-                <span class="eval-label">Evaluation:</span>
-                <span class="eval-value">${evalText}</span>
-             </div>`;
-
-    if (quality) {
-        html += `<div class="move-quality ${quality.className}">${quality.label}</div>`;
-        html += `<p class="explanation">${quality.explanation}</p>`;
-    }
-
-    html += `<div class="best-move">
-                <span class="best-move-label">Best move:</span>
-                <span class="best-move-value">${bestMoveText}</span>
-                <span class="best-move-squares">${bestMove.from} → ${bestMove.to}</span>
-             </div>`;
-    html += `<p class="analysis-note">Fast AI analysis (depth ${ANALYSIS_DEPTH}) • Green squares show best move</p>`;
-    html += '</div>';
-
-    panel.innerHTML = html;
+function analyzePosition() {
+    if (!state.chess) return;
+    const token = ++state.analysisToken;
+    const index = state.currentMoveIndex;
+    const btn = $('analyzeBtn');
+    btn.disabled = true;
+    btn.textContent = 'Analyzing…';
+    $('analysisPanel').innerHTML = '<h3>Position review</h3><p class="loading">Analyzing…</p>';
+    setTimeout(async () => {
+        if (token !== state.analysisToken || !state.chess) return;
+        try {
+            const position = positionAt(index);
+            const moves = state.moveHistory.slice(0, index).map(move => move.san);
+            const result = typeof Worker === 'undefined'
+                ? calculateReview(state.gameStates[0], moves)
+                : await new Promise((resolve, reject) => {
+                    const worker = new Worker(new URL('analysis-worker.js', document.querySelector('script[src$="script.js"]').src));
+                    state.analysisWorker = worker;
+                    worker.onmessage = event => {
+                        worker.terminate();
+                        state.analysisWorker = null;
+                        event.data.error ? reject(new Error(event.data.error)) : resolve(event.data);
+                    };
+                    worker.onerror = error => { worker.terminate(); state.analysisWorker = null; reject(error); };
+                    worker.postMessage({ fen: state.gameStates[0], moves });
+                });
+            if (token !== state.analysisToken) return;
+            const { reply, evaluation, best, actual } = result;
+            let review = '';
+            if (index) {
+                const played = state.moveHistory[index - 1];
+                if (best) {
+                    const loss = Math.max(0, (best.evaluation - actual) * (played.color === 'w' ? 1 : -1));
+                    const quality = getMoveQuality(loss);
+                    review = `<h4>${escapeHtml(moveLabel(index))} · ${escapeHtml(playerName(played.color))}</h4><div class="move-quality ${quality.className}">${quality.label}</div><p>${quality.explanation}</p><div class="best-move"><span class="best-move-label">Best alternative before this move</span><strong>${best.move.san}</strong></div>`;
+                }
+            }
+            const score = Math.abs(evaluation) >= MATE_SCORE / 2 ? (evaluation > 0 ? 'White has forced mate' : 'Black has forced mate') : `${evaluation >= 0 ? '+' : ''}${evaluation.toFixed(2)}`;
+            $('analysisPanel').innerHTML = `<h3>Position review</h3>${review}<div class="evaluation"><span class="eval-label">Current position</span><strong class="eval-value">${score}</strong></div><p class="explanation">Positive favours White; negative favours Black.</p><div class="best-move"><span class="best-move-label">${reply ? (position.turn() === 'w' ? 'White' : 'Black') + ' to move · suggested continuation' : 'Game over'}</span><strong>${reply ? reply.move.san : position.in_checkmate() ? 'Checkmate' : 'Draw'}</strong></div><p class="analysis-note">Local depth-${ANALYSIS_DEPTH} engine. Ratings are approximate, not a full engine review. Highlights show the played move.</p>`;
+        } catch (error) {
+            console.error(error);
+            $('analysisPanel').innerHTML = '<h3>Position review</h3><p role="alert">Analysis failed. Please try again.</p>';
+        } finally {
+            if (token !== state.analysisToken) return;
+            btn.disabled = false;
+            btn.textContent = index ? 'Analyze this move' : 'Analyze position';
+        }
+    }, ANALYSIS_DELAY_MS);
 }
 
 // ===== NAVIGATION BACK TO SEARCH =====
@@ -490,13 +505,26 @@ function backToSearch() {
     state.currentGame = null;
     state.chess = null;
     state.highlightedSquares = [];
-    state.currentUsername = '';
+    state.analysisToken++;
+    if (state.analysisWorker) { state.analysisWorker.terminate(); state.analysisWorker = null; }
     state.userColor = 'w';
 }
 
 // ===== INITIALIZATION =====
 
 function init() {
+    if (typeof Chess === 'undefined') {
+        $('gamesListContainer').innerHTML = '<p role="alert">The chess library could not load. Check your connection and reload.</p>';
+        $('searchBtn').disabled = true;
+        return;
+    }
+    $('flipBtn').addEventListener('click', () => { state.orientation = state.orientation === 'w' ? 'b' : 'w'; renderBoard(); });
+    $('moveList').addEventListener('click', event => { const button = event.target.closest('[data-ply]'); if (button) goToMove(Number(button.dataset.ply)); });
+    document.addEventListener('keydown', event => {
+        if (!state.chess || /INPUT|TEXTAREA|SELECT/.test(event.target.tagName)) return;
+        const action = { ArrowLeft: previousMove, ArrowRight: nextMove, Home: firstMove, End: lastMove }[event.key];
+        if (action) { event.preventDefault(); action(); }
+    });
     $('searchBtn').addEventListener('click', searchGames);
     $('usernameInput').addEventListener('keypress', event => {
         if (event.key === 'Enter') searchGames();
@@ -510,4 +538,4 @@ function init() {
     $('analyzeBtn').addEventListener('click', analyzePosition);
 }
 
-document.addEventListener('DOMContentLoaded', init);
+if (typeof document !== 'undefined') document.addEventListener('DOMContentLoaded', init);

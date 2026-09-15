@@ -9,13 +9,14 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>Free Chess.com Game Analysis</h1>
-            <p>Search for any Chess.com player and analyze their games with AI</p>
+            <div class="eyebrow">CHESS / ANALYSIS</div>
+            <h1>Your games. A clearer perspective.</h1>
+            <p>Explore Chess.com games, review each move, and understand the position.</p>
         </div>
 
         <div class="search-section" id="searchSection">
             <div class="search-box">
-                <input type="text" id="usernameInput" placeholder="Enter Chess.com username...">
+                <input aria-label="Chess.com username" autocomplete="off" spellcheck="false" type="text" id="usernameInput" placeholder="Enter Chess.com username...">
                 <button id="searchBtn">Search Games</button>
             </div>
             <div id="gamesListContainer"></div>
@@ -25,6 +26,7 @@
             <button class="back-button" id="backButton">← Back to Games</button>
             <div class="analyzer-grid">
                 <div class="board-container">
+                    <div class="player-bar" id="topPlayer"></div>
                     <div class="board-wrapper">
                         <div class="rank-labels" id="rankLabels"></div>
                         <div class="board-and-files">
@@ -32,18 +34,20 @@
                             <div class="file-labels" id="fileLabels"></div>
                         </div>
                     </div>
+                    <div class="player-bar" id="bottomPlayer"></div>
                     <div class="move-info" id="moveInfo">Move 0: Starting Position</div>
                     <div class="controls">
                         <button id="prevBtn">← Previous</button>
                         <button id="nextBtn">Next →</button>
                         <button id="firstBtn">⏮ First</button>
                         <button id="lastBtn">Last ⏭</button>
-                        <button id="analyzeBtn" class="analyze-btn">🔍 Analyze Position</button>
+                        <button id="flipBtn">Flip board</button>
+                        <button id="analyzeBtn" class="analyze-btn">Analyze position</button>
                     </div>
                 </div>
-                <div class="analysis-panel" id="analysisPanel">
-                    <h3>Move Analysis</h3>
-                    <p style="color: #888888;">Navigate through the game and click "Analyze Position" to get AI analysis for each move.</p>
+                <div class="review-column">
+                    <div class="analysis-panel" id="analysisPanel" aria-live="polite"></div>
+                    <section class="moves-panel"><h3>Game moves</h3><p>Click a move to jump · ← → to navigate</p><div id="moveList"></div></section>
                 </div>
             </div>
         </div>
