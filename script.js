@@ -519,7 +519,31 @@ function setReviewVisible(visible) {
     $('reviewToggle').textContent = visible ? 'Show board' : 'Review & moves';
 }
 
+function fitVisibleViewport() {
+    const viewport = window.visualViewport;
+    document.documentElement.style.setProperty('--viewport-height', `${viewport ? viewport.height : window.innerHeight}px`);
+    document.documentElement.style.setProperty('--viewport-top', `${viewport ? viewport.offsetTop : 0}px`);
+}
+
 function init() {
+    fitVisibleViewport();
+    window.addEventListener('resize', fitVisibleViewport);
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', fitVisibleViewport);
+        window.visualViewport.addEventListener('scroll', fitVisibleViewport);
+    }
+    // Measure the space remaining after player labels and controls. This also
+    // handles browser zoom and engines with different container-unit behaviour.
+    const boardSpace = document.querySelector('.board-wrapper');
+    if (typeof ResizeObserver !== 'undefined') {
+        const boardObserver = new ResizeObserver(entries => {
+            const { width, height } = entries[0].contentRect;
+            const size = Math.max(0, Math.floor(Math.min(width - 32, height - 20)));
+            boardSpace.style.setProperty('--fitted-board-size', `${size}px`);
+        });
+        boardObserver.observe(boardSpace);
+    }
+
     if (typeof Chess === 'undefined') {
         $('gamesListContainer').innerHTML = '<p role="alert">The chess library could not load. Check your connection and reload.</p>';
         $('searchBtn').disabled = true;
