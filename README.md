@@ -1,6 +1,6 @@
-# Chess.com Game Analyzer
+# Chess.com Game Analyser
 
-Use this tool to analyze your Chess.com games. It uses AI to check each move. You do not need a Chess.com subscription.
+Use this tool to analyse your Chess.com games. It uses AI to check each move. You do not need a Chess.com subscription.
 
 ## Overview
 
@@ -38,7 +38,7 @@ You need:
 1. **Enter your username.** Type your Chess.com username in the search box.
 2. **Select a game.** Click on a game from your last 20 games.
 3. **Move through the game.** Click "Previous" or "Next".
-4. **Analyze a position.** Click "Analyze Position" to see the AI evaluation.
+4. **Analyse a position.** Click "Analyse Position" to see the AI evaluation.
 5. **Check the suggestion.** The best move is highlighted in green.
 
 ## Controls
@@ -49,7 +49,7 @@ You need:
 | **Next →** | Go forward one move. |
 | **⏮ First** | Go to the start of the game. |
 | **Last ⏭** | Go to the end of the game. |
-| **🔍 Analyze Position** | Get the AI evaluation of the current position. |
+| **🔍 Analyse Position** | Get the AI evaluation of the current position. |
 
 ## How This Works
 
@@ -145,10 +145,10 @@ function analyzePosition() {
 - [ ] **Captured pieces display** – Show the pieces that each side captured.
 - [ ] **Time control information** – Show the time each player used for each move.
 - [ ] **Game statistics** – Show the accuracy percentage and the blunder count.
-- [ ] **Multi-game analysis** – Analyze more than one game at the same time.
+- [ ] **Multi-game analysis** – Analyse more than one game at the same time.
 - [ ] **Sound effects** – Play a sound for each move.
-- [ ] **Mobile optimization** – Improve the touch controls.
-- [ ] **Save analysis** – Export the analyzed game with notes.
+- [ ] **Mobile optimisation** – Improve the touch controls.
+- [ ] **Save analysis** – Export the analysed game with notes.
 
 ### Long-Term Goals
 
@@ -156,13 +156,13 @@ function analyzePosition() {
 - Add user accounts, to save the analysis history.
 - Add a function to share positions.
 - Add tournament game analysis.
-- Add a function for users to analyze games together.
+- Add a function for users to analyse games together.
 
 ## Contributions
 
 This is a personal project. The code is proprietary. If you find a bug, or if you have a suggestion for a new feature, open an issue on GitHub.
 
-## License
+## Licence
 
 **All Rights Reserved**
 
@@ -179,8 +179,8 @@ Syed Zaheer is a chess enthusiast and a developer. Syed Zaheer made this tool to
 ## Performance Tips
 
 - Use Chrome or Firefox, for the best performance.
-- Close other browser tabs when you analyze a game.
-- Analyze only the positions you need. Do not analyze every move.
+- Close other browser tabs when you analyse a game.
+- Analyse only the positions you need. Do not analyse every move.
 - Clear the browser cache if you have a problem.
 
 ## Learning Resources

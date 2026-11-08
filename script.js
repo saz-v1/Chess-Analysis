@@ -13,7 +13,7 @@ const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 const RANKS = ['8', '7', '6', '5', '4', '3', '2', '1'];
 
 const ANALYSIS_DEPTH = 3;          // plies searched by the engine
-const ANALYSIS_DELAY_MS = 50;      // lets the "Analyzing..." UI paint before the (blocking) search runs
+const ANALYSIS_DELAY_MS = 50;      // lets the "Analysing..." UI paint before the (blocking) search runs
 const RECENT_GAMES_LIMIT = 20;
 const MATE_SCORE = 100;
 
@@ -214,7 +214,7 @@ function displayGames(games) {
         const side = detectUserColor(state.currentUsername, game.white.username, game.black.username);
         const result = escapeHtml(game[side === 'w' ? 'white' : 'black'].result);
         const timeClass = escapeHtml(game.time_class);
-        const date = new Date(game.end_time * 1000).toLocaleDateString();
+        const date = new Date(game.end_time * 1000).toLocaleDateString('en-GB');
 
         return `
             <button class="game-card" data-index="${index}">
@@ -240,7 +240,7 @@ function displayGames(games) {
 
 // ===== GAME LOADING =====
 
-/** Works out which color the searched player had in this game. */
+/** Works out which colour the searched player had in this game. */
 function detectUserColor(username, whiteUsername, blackUsername) {
     const lowerUsername = username.toLowerCase();
     if (lowerUsername === whiteUsername.toLowerCase()) return 'w';
@@ -399,8 +399,8 @@ function goToMove(index) {
     const last = state.moveHistory[index - 1];
     state.highlightedSquares = last ? [last.from, last.to] : [];
     $('analyzeBtn').disabled = false;
-    $('analyzeBtn').textContent = index ? 'Analyze this move' : 'Analyze position';
-    $('analysisPanel').innerHTML = '<h3>Position review</h3><p>Analyze the selected move to compare it with the best alternative. Board highlights show the move just played.</p><p class="analysis-note">Local depth-3 engine · approximate analysis</p>';
+    $('analyzeBtn').textContent = index ? 'Analyse this move' : 'Analyse position';
+    $('analysisPanel').innerHTML = '<h3>Position review</h3><p>Analyse the selected move to compare it with the best alternative. Board highlights show the move just played.</p><p class="analysis-note">Local depth-3 engine · approximate analysis</p>';
     renderBoard();
     updateMoveInfo();
     updateButtons();
@@ -453,8 +453,8 @@ function analyzePosition() {
     const index = state.currentMoveIndex;
     const btn = $('analyzeBtn');
     btn.disabled = true;
-    btn.textContent = 'Analyzing…';
-    $('analysisPanel').innerHTML = '<h3>Position review</h3><p class="loading">Analyzing…</p>';
+    btn.textContent = 'Analysing…';
+    $('analysisPanel').innerHTML = '<h3>Position review</h3><p class="loading">Analysing…</p>';
     setTimeout(async () => {
         if (token !== state.analysisToken || !state.chess) return;
         try {
@@ -492,7 +492,7 @@ function analyzePosition() {
         } finally {
             if (token !== state.analysisToken) return;
             btn.disabled = false;
-            btn.textContent = index ? 'Analyze this move' : 'Analyze position';
+            btn.textContent = index ? 'Analyse this move' : 'Analyse position';
         }
     }, ANALYSIS_DELAY_MS);
 }

@@ -18,7 +18,7 @@ for(const fen of ['7k/5Q2/6K1/8/8/8/8/8 w - - 0 1','8/8/8/8/8/6k1/5q2/7K b - - 0
 run(`state.currentUsername='Player';state.gamesCache=[{pgn:'1. e4 e5 2. Nf3 Nc6',white:{username:'Other'},black:{username:'Player'}}];loadGame(0);`);
 assert.equal(run('state.chess.turn()'),'w');assert.equal(run('state.orientation'),'b');
 run('nextMove()');assert.equal(run("state.chess.get('e4').color"),'w');assert.equal(run('state.chess.turn()'),'b');assert.match(elements.get('moveInfo').textContent,/1\. e4/);
-run('analyzePosition(); nextMove()');timers.shift()();assert.match(elements.get('analysisPanel').innerHTML,/Analyze the selected/);
+run('analyzePosition(); nextMove()');timers.shift()();assert.match(elements.get('analysisPanel').innerHTML,/Analyse the selected/);
 run('backToSearch(); loadGame(0)');assert.equal(run('state.userColor'),'b');
 run('goToMove(4); analyzePosition()');timers.shift()();assert.match(elements.get('analysisPanel').innerHTML,/Best alternative before this move/);assert.match(elements.get('analysisPanel').innerHTML,/White to move/);
 run(String.raw`state.gamesCache=[{pgn:'[SetUp "1"]\n[FEN "7k/8/8/8/8/8/8/K7 b - - 0 23"]\n\n23... Kg8',white:{username:'Other'},black:{username:'Player'}}];loadGame(0);nextMove();`);
