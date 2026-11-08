@@ -24,7 +24,10 @@
         </div>
 
         <div class="analyzer-section" id="analyzerSection">
-            <button class="back-button" id="backButton">← Back to Games</button>
+            <div class="review-toolbar">
+                <button class="back-button" id="backButton">← Back to Games</button>
+                <button id="reviewToggle" aria-expanded="false" aria-controls="reviewColumn">Review &amp; moves</button>
+            </div>
             <div class="analyzer-grid">
                 <div class="board-container">
                     <div class="player-bar" id="topPlayer"></div>
@@ -46,7 +49,7 @@
                         <button id="analyzeBtn" class="analyze-btn">Analyze position</button>
                     </div>
                 </div>
-                <div class="review-column">
+                <div class="review-column" id="reviewColumn">
                     <div class="analysis-panel" id="analysisPanel" aria-live="polite"></div>
                     <section class="moves-panel"><h3>Game moves</h3><p>Click a move to jump · ← → to navigate</p><div id="moveList"></div></section>
                 </div>

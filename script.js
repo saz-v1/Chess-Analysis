@@ -500,7 +500,8 @@ function analyzePosition() {
 // ===== NAVIGATION BACK TO SEARCH =====
 
 function backToSearch() {
-    $('searchSection').style.display = 'block';
+    $('searchSection').style.display = '';
+    setReviewVisible(false);
     $('analyzerSection').classList.remove('active');
     state.currentGame = null;
     state.chess = null;
@@ -511,6 +512,12 @@ function backToSearch() {
 }
 
 // ===== INITIALIZATION =====
+
+function setReviewVisible(visible) {
+    $('analyzerSection').classList[visible ? 'add' : 'remove']('review-open');
+    $('reviewToggle').setAttribute('aria-expanded', String(visible));
+    $('reviewToggle').textContent = visible ? 'Show board' : 'Review & moves';
+}
 
 function init() {
     if (typeof Chess === 'undefined') {
@@ -535,7 +542,13 @@ function init() {
     $('nextBtn').addEventListener('click', nextMove);
     $('firstBtn').addEventListener('click', firstMove);
     $('lastBtn').addEventListener('click', lastMove);
-    $('analyzeBtn').addEventListener('click', analyzePosition);
+    $('reviewToggle').addEventListener('click', () => {
+        setReviewVisible(!$('analyzerSection').classList.contains('review-open'));
+    });
+    $('analyzeBtn').addEventListener('click', () => {
+        analyzePosition();
+        if (window.matchMedia('(max-width: 650px) and (min-height: 501px)').matches) setReviewVisible(true);
+    });
 }
 
 if (typeof document !== 'undefined') document.addEventListener('DOMContentLoaded', init);
